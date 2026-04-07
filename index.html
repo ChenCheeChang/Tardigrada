@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 智能計算系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 15px; /* 基底字體 ≥12px */
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary), var(--primary-light));
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .header-actions { display: flex; gap: 10px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn:active { transform: translateY(0); }
+        .btn-pdf { background: #ef4444; color: white; }
+        .btn-ppt { background: #d97706; color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-info { background: var(--info); color: white; }
+        .btn-outline { background: transparent; color: white; border: 2px solid white; }
+        .btn-outline:hover { background: white; color: var(--primary); }
+        .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+
+        /* Main Layout */
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        }
+        .stat-card:nth-child(1)::before { background: var(--primary); }
+        .stat-card:nth-child(2)::before { background: var(--success); }
+        .stat-card:nth-child(3)::before { background: var(--warning); }
+        .stat-card:nth-child(4)::before { background: var(--info); }
+        .stat-card:nth-child(5)::before { background: var(--danger); }
+        .stat-card .stat-icon { font-size: 28px; margin-bottom: 6px; }
+        .stat-card .stat-value { font-size: 26px; font-weight: 700; color: var(--text); }
+        .stat-card .stat-label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        }
+        .card-header h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .card-body { padding: 20px; }
+
+        /* Form */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-light); }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
+            font-size: 14px; transition: all 0.2s; background: #fafbfc;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white;
+        }
+        .form-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+
+        /* Table */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead th {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white; padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+        tbody tr:hover { background: #f0f4ff; }
+        tbody td { padding: 10px 14px; vertical-align: middle; }
+        .kpi-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+            border-radius: 16px; font-weight: 700; font-size: 12px;
+        }
+        .kpi-excellent { background: #d1fae5; color: #065f46; }
+        .kpi-good { background: #dbeafe; color: #1e40af; }
+        .kpi-average { background: #fef3c7; color: #92400e; }
+        .kpi-poor { background: #fee2e2; color: #991b1b; }
+        .category-tag {
+            display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+        }
+        .cat-product { background: #ede9fe; color: #5b21b6; }
+        .cat-performance { background: #d1fae5; color: #065f46; }
+        .cat-currency { background: #dbeafe; color: #1e40af; }
+        .cat-securities { background: #fef3c7; color: #92400e; }
+        .cat-other { background: #f1f5f9; color: #475569; }
+
+        /* Chart Container */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .chart-box { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+        .chart-box h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
+        .chart-box canvas { max-height: 300px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card); border-radius: var(--radius); width: 90%; max-width: 700px;
+            max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 18px; }
+        .modal-close {
+            width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 50%;
+            font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .modal-close:hover { background: #fee2e2; color: var(--danger); }
+        .modal-body { padding: 20px; }
+
+        /* Weight Slider */
+        .weight-control { display: flex; align-items: center; gap: 10px; }
+        .weight-control input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; background: var(--border); border-radius: 3px; }
+        .weight-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; cursor: pointer;
+        }
+        .weight-value { min-width: 40px; text-align: center; font-weight: 700; color: var(--primary); font-size: 14px; }
+
+        /* Progress Bar */
+        .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+        /* Empty State & Notification */
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-light); }
+        .empty-state .empty-icon { font-size: 56px; margin-bottom: 12px; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
+        .notification {
+            position: fixed; top: 80px; right: 20px; padding: 14px 20px; border-radius: 12px;
+            color: white; font-weight: 600; z-index: 2000; animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.info { background: var(--info); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        /* Settings & Toggles */
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-weight: 600; font-size: 14px; }
+        .setting-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        .toggle {
+            width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s;
+        }
+        .toggle.active { background: var(--primary); }
+        .toggle::after {
+            content: ''; width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute;
+            top: 2px; left: 2px; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle.active::after { transform: translateX(20px); }
+        .select-inline { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; background: white; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 16px 20px; flex-direction: column; gap: 12px; }
+            .header h1 { font-size: 20px; }
+            .main-container { padding: 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .header-actions { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>📊 KPI 智能計算系統</h1>
+    <div class="header-actions">
+        <button class="btn btn-outline" onclick="openSettings()">⚙️ 設定</button>
+        <button class="btn btn-outline" onclick="exportPDF()">📄 匯出 PDF</button>
+        <button class="btn btn-outline" onclick="exportPPT()">📊 匯出 PPT</button>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Dashboard Stats -->
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" id="totalItems">0</div><div class="stat-label">總項目數</div></div>
+        <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value" id="avgKPI">0.00</div><div class="stat-label">平均 KPI</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="totalValue">0</div><div class="stat-label">總產值</div></div>
+        <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value" id="bestItem">-</div><div class="stat-label">最佳項目</div></div>
+        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value" id="achievementRate">0%</div><div class="stat-label">目標達成率</div></div>
+    </div>
+
+    <!-- Input Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2>➕ 新增 KPI 項目</h2>
+            <button class="btn btn-sm btn-primary" onclick="toggleAdvanced()">🔧 進階設定</button>
+        </div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>品項名稱</label>
+                    <input type="text" id="itemName" placeholder="例如：A產品、業績目標...">
+                </div>
+                <div class="form-group">
+                    <label>類別</label>
+                    <select id="itemCategory">
+                        <option value="product">📦 物品/產品</option>
+                        <option value="performance">📈 業績</option>
+                        <option value="currency">💱 貨幣</option>
+                        <option value="securities">📊 有價證券</option>
+                        <option value="other">📌 其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>內容描述</label>
+                    <input type="text" id="itemDesc" placeholder="簡短描述此項目...">
+                </div>
+                <div class="form-group">
+                    <label>數量</label>
+                    <input type="number" id="itemQty" placeholder="0" min="0" step="any">
+                </div>
+                <div class="form-group">
+                    <label>目標數量</label>
+                    <input type="number" id="itemTarget" placeholder="0" min="0" step="any">
+                </div>
+                <div class="form-group">
+                    <label>單位價格/價值</label>
+                    <input type="number" id="itemPrice" placeholder="0.00" min="0" step="any">
+                </div>
+                <div class="form-group">
+                    <label>貨幣單位</label>
+                    <select id="currencyUnit">
+                        <option value="TWD">🇹🇼 TWD (台幣)</option><option value="USD">🇺🇸 USD (美金)</option>
+                        <option value="EUR">🇪🇺 EUR (歐元)</option><option value="JPY">🇯🇵 JPY (日圓)</option>
+                        <option value="CNY">🇨🇳 CNY (人民幣)</option><option value="HKD">🇭🇰 HKD (港幣)</option>
+                        <option value="GBP">🇬🇧 GBP (英鎊)</option><option value="KRW">🇰🇷 KRW (韓元)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>權重 (%)</label>
+                    <div class="weight-control">
+                        <input type="range" id="itemWeight" min="1" max="100" value="10" oninput="document.getElementById('weightDisplay').textContent=this.value+'%'">
+                        <span class="weight-value" id="weightDisplay">10%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="advancedSettings" style="display:none; margin-top:20px;">
+                <div style="background:#f0f4ff; border:2px solid var(--primary-light); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
+                    <div style="font-size:13px; color:var(--text-light); margin-bottom:6px;">KPI 計算公式</div>
+                    <div style="font-size:16px; font-weight:700; color:var(--primary-dark); font-family:monospace;">KPI = (實際數量 ÷ 目標數量) × 權重 × 100</div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>評分標準</label>
+                        <select id="scoringMethod">
+                            <option value="percentage">百分比達成率</option>
+                            <option value="points">分數制 (0-100)</option>
+                            <option value="custom">自訂公式</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>自訂分數 (若選分數制)</label>
+                        <input type="number" id="customScore" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>基準值 (自訂公式用)</label>
+                        <input type="number" id="baseValue" placeholder="基準數值" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>評級門檻 - 優秀</label>
+                        <input type="number" id="thresholdExcellent" value="90" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>評級門檻 - 良好</label>
+                        <input type="number" id="thresholdGood" value="70" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>評級門檻 - 普通</label>
+                        <input type="number" id="thresholdAverage" value="50" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-danger" onclick="clearForm()">🗑️ 清除</button>
+                <button class="btn btn-warning" onclick="addSampleData()">📋 載入範例</button>
+                <button class="btn btn-success" onclick="addItem()">✅ 新增項目</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📋 KPI 項目明細</h2>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-sm btn-info" onclick="sortTable('kpiScore')">📊 依KPI排序</button>
+                <button class="btn btn-sm btn-danger" onclick="clearAll()">🗑️ 清除全部</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-wrapper">
+                <table id="kpiTable">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>品項名稱</th><th>類別</th><th>內容描述</th>
+                            <th>數量</th><th>目標</th><th>達成率</th><th>單位價值</th>
+                            <th>總產值</th><th>權重</th><th>KPI 分數</th><th>評級</th><th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kpiTableBody"></tbody>
+                </table>
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📭</div>
+                    <h3>尚無 KPI 項目</h3>
+                    <p>請使用上方表單新增項目，或載入範例資料</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+        <div class="chart-box"><h3>📊 各项目 KPI 比較</h3><canvas id="barChart"></canvas></div>
+        <div class="chart-box"><h3>🎯 評級分佈</h3><canvas id="pieChart"></canvas></div>
+        <div class="chart-box"><h3>💰 產值分佈</h3><canvas id="doughnutChart"></canvas></div>
+        <div class="chart-box"><h3>📈 達成率趨勢</h3><canvas id="radarChart"></canvas></div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+    <div class="modal">
+        <div class="modal-header"><h3>⚙️ 系統設定</h3><button class="modal-close" onclick="closeSettings()">✕</button></div>
+        <div class="modal-body">
+            <div class="setting-row"><div><div class="setting-label">自動計算 KPI</div><div class="setting-desc">新增項目時自動計算 KPI 值</div></div><div class="toggle active" id="toggleAutoCalc" onclick="this.classList.toggle('active')"></div></div>
+            <div class="setting-row"><div><div class="setting-label">顯示圖表</div><div class="setting-desc">在頁面中顯示視覺化圖表</div></div><div class="toggle active" id="toggleCharts" onclick="this.classList.toggle('active')"></div></div>
+            <div class="setting-row"><div><div class="setting-label">匯出包含圖表</div><div class="setting-desc">PDF/PPT 匯出時包含圖表影像</div></div><div class="toggle active" id="toggleExportCharts" onclick="this.classList.toggle('active')"></div></div>
+            <div class="setting-row"><div><div class="setting-label">KPI 計算模式</div><div class="setting-desc">選擇預設的 KPI 計算方式</div></div><select class="select-inline" id="calcMode"><option value="standard">標準模式</option><option value="weighted">加權模式</option><option value="custom">自訂模式</option></select></div>
+            <div class="setting-row"><div><div class="setting-label">小數點位數</div><div class="setting-desc">設定數值顯示的小數位數</div></div><select class="select-inline" id="decimalPlaces"><option value="0">0 位</option><option value="1">1 位</option><option value="2" selected>2 位</option><option value="3">3 位</option></select></div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+    <div class="modal">
+        <div class="modal-header"><h3>✏️ 編輯項目</h3><button class="modal-close" onclick="closeEditModal()">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editIndex">
+            <div class="form-grid">
+                <div class="form-group"><label>品項名稱</label><input type="text" id="editName"></div>
+                <div class="form-group"><label>類別</label><select id="editCategory"><option value="product">📦 物品/產品</option><option value="performance">📈 業績</option><option value="currency">💱 貨幣</option><option value="securities">📊 有價證券</option><option value="other">📌 其他</option></select></div>
+                <div class="form-group"><label>內容描述</label><input type="text" id="editDesc"></div>
+                <div class="form-group"><label>數量</label><input type="number" id="editQty" min="0" step="any"></div>
+                <div class="form-group"><label>目標數量</label><input type="number" id="editTarget" min="0" step="any"></div>
+                <div class="form-group"><label>單位價格/價值</label><input type="number" id="editPrice" min="0" step="any"></div>
+                <div class="form-group"><label>貨幣單位</label><select id="editCurrency"><option value="TWD">🇹🇼 TWD</option><option value="USD">🇺🇸 USD</option><option value="EUR">🇪🇺 EUR</option><option value="JPY">🇯🇵 JPY</option><option value="CNY">🇨🇳 CNY</option><option value="HKD">🇭🇰 HKD</option><option value="GBP">🇬🇧 GBP</option><option value="KRW">🇰🇷 KRW</option></select></div>
+                <div class="form-group"><label>權重 (%)</label><input type="number" id="editWeight" min="1" max="100" value="10"></div>
+            </div>
+            <div class="form-actions" style="margin-top:20px;"><button class="btn btn-primary" onclick="saveEdit()">💾 儲存修改</button></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== Data Store ====================
+let kpiData = [];
+let charts = {};
+
+// ==================== Category Config ====================
+const categoryConfig = {
+    product: { label: '📦 物品/產品', class: 'cat-product' },
+    performance: { label: '📈 業績', class: 'cat-performance' },
+    currency: { label: '💱 貨幣', class: 'cat-currency' },
+    securities: { label: '📊 有價證券', class: 'cat-securities' },
+    other: { label: '📌 其他', class: 'cat-other' }
+};
+
+const currencySymbols = {
+    TWD: 'NT$', USD: '$', EUR: '€', JPY: '¥', CNY: '¥', HKD: 'HK$', GBP: '£', KRW: '₩'
+};
+
+// ==================== Core Functions ====================
+function calculateKPI(item, settings = {}) {
+    const method = settings.method || 'percentage';
+    let kpiScore = 0, achievementRate = 0;
+
+    if (method === 'percentage') {
+        achievementRate = item.target > 0 ? (item.qty / item.target) * 100 : (item.qty > 0 ? 100 : 0);
+        kpiScore = (achievementRate / 100) * item.weight;
+    } else if (method === 'points') {
+        kpiScore = ((settings.customScore || 0) / 100) * item.weight;
+        achievementRate = settings.customScore || 0;
+    } else {
+        achievementRate = (settings.baseValue || 0) > 0 ? (item.qty / settings.baseValue) * 100 : 0;
+        kpiScore = (achievementRate / 100) * item.weight;
+    }
+
+    return {
+        kpiScore: Math.min(kpiScore, item.weight),
+        achievementRate: Math.min(achievementRate, 999.99),
+        totalValue: item.qty * item.price,
+        rating: getRating(achievementRate, settings)
+    };
+}
+
+function getRating(rate, settings = {}) {
+    const ex = settings.excellent || 90, gd = settings.good || 70, av = settings.average || 50;
+    if (rate >= ex) return { label: '優秀', class: 'kpi-excellent', icon: '🏆' };
+    if (rate >= gd) return { label: '良好', class: 'kpi-good', icon: '⭐' };
+    if (rate >= av) return { label: '普通', class: 'kpi-average', icon: '📋' };
+    return { label: '待加強', class: 'kpi-poor', icon: '⚠️' };
+}
+
+function getSettings() {
+    return {
+        method: document.getElementById('scoringMethod')?.value || 'percentage',
+        customScore: parseFloat(document.getElementById('customScore')?.value) || 0,
+        baseValue: parseFloat(document.getElementById('baseValue')?.value) || 0,
+        excellent: parseFloat(document.getElementById('thresholdExcellent')?.value) || 90,
+        good: parseFloat(document.getElementById('thresholdGood')?.value) || 70,
+        average: parseFloat(document.getElementById('thresholdAverage')?.value) || 50,
+        decimals: parseInt(document.getElementById('decimalPlaces')?.value || 2)
+    };
+}
+
+function formatNumber(num) {
+    return Number(num).toLocaleString('zh-TW', { minimumFractionDigits: getSettings().decimals, maximumFractionDigits: getSettings().decimals });
+}
+
+function formatCurrency(num, currency) {
+    return (currencySymbols[currency] || '') + formatNumber(num);
+}
+
+// ==================== Add Item ====================
+function addItem() {
+    const name = document.getElementById('itemName').value.trim();
+    if (!name) return showNotification('請輸入品項名稱', 'error');
+
+    const settings = getSettings();
+    const item = {
+        name, category: document.getElementById('itemCategory').value,
+        desc: document.getElementById('itemDesc').value.trim(),
+        qty: parseFloat(document.getElementById('itemQty').value) || 0,
+        target: parseFloat(document.getElementById('itemTarget').value) || 0,
+        price: parseFloat(document.getElementById('itemPrice').value) || 0,
+        currency: document.getElementById('currencyUnit').value,
+        weight: parseFloat(document.getElementById('itemWeight').value) || 10,
+        timestamp: new Date().toISOString()
+    };
+
+    const calc = calculateKPI(item, settings);
+    Object.assign(item, calc);
+    kpiData.push(item);
+    clearForm();
+    renderTable(); updateStats(); updateCharts();
+    showNotification(`✅ 已新增「${name}」`, 'success');
+}
+
+// ==================== Render Table ====================
+function renderTable() {
+    const tbody = document.getElementById('kpiTableBody');
+    const emptyState = document.getElementById('emptyState');
+    tbody.innerHTML = '';
+    
+    if (kpiData.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+    }
+    emptyState.style.display = 'none';
+
+    kpiData.forEach((item, index) => {
+        const cat = categoryConfig[item.category];
+        const achColor = item.achievementRate >= 90 ? 'var(--success)' : item.achievementRate >= 70 ? 'var(--info)' : item.achievementRate >= 50 ? 'var(--warning)' : 'var(--danger)';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${index + 1}</strong></td>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="category-tag ${cat.class}">${cat.label}</span></td>
+            <td>${item.desc || '-'}</td>
+            <td>${formatNumber(item.qty)}</td>
+            <td>${formatNumber(item.target)}</td>
+            <td>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:${Math.min(item.achievementRate, 100)}%; background:${achColor}"></div></div>
+                    <span>${formatNumber(item.achievementRate)}%</span>
+                </div>
+            </td>
+            <td>${formatCurrency(item.price, item.currency)}</td>
+            <td><strong>${formatCurrency(item.totalValue, item.currency)}</strong></td>
+            <td>${item.weight}%</td>
+            <td><strong>${formatNumber(item.kpiScore)}</strong></td>
+            <td><span class="kpi-badge ${item.rating.class}">${item.rating.icon} ${item.rating.label}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="editItem(${index})">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ==================== Update Stats ====================
+function updateStats() {
+    const total = kpiData.length;
+    const avgKPI = total > 0 ? kpiData.reduce((s, i) => s + i.kpiScore, 0) / total : 0;
+    const totalVal = kpiData.reduce((s, i) => s + i.totalValue, 0);
+    const best = total > 0 ? kpiData.reduce((b, i) => i.kpiScore > b.kpiScore ? i : b, kpiData[0]) : null;
+    const avgAch = total > 0 ? kpiData.reduce((s, i) => s + i.achievementRate, 0) / total : 0;
+
+    document.getElementById('totalItems').textContent = total;
+    document.getElementById('avgKPI').textContent = formatNumber(avgKPI);
+    document.getElementById('totalValue').textContent = formatNumber(totalVal);
+    document.getElementById('bestItem').textContent = best ? best.name : '-';
+    document.getElementById('achievementRate').textContent = formatNumber(avgAch) + '%';
+}
+
+// ==================== Charts ====================
+function updateCharts() {
+    const showCharts = document.getElementById('toggleCharts')?.classList.contains('active') ?? true;
+    if (!showCharts || kpiData.length === 0) {
+        Object.values(charts).forEach(c => c.destroy());
+        charts = {};
+        return;
+    }
+
+    const labels = kpiData.map(i => i.name);
+    const kpiScores = kpiData.map(i => i.kpiScore);
+    const achievements = kpiData.map(i => i.achievementRate);
+    const values = kpiData.map(i => i.totalValue);
+    const ratings = { '優秀': 0, '良好': 0, '普通': 0, '待加強': 0 };
+    kpiData.forEach(i => ratings[i.rating.label]++);
+
+    Object.values(charts).forEach(c => c.destroy());
+
+    charts.bar = new Chart(document.getElementById('barChart'), {
+        type: 'bar', data: { labels, datasets: [{ label: 'KPI 分數', data: kpiScores, backgroundColor: kpiScores.map(s => s >= 8 ? '#10b981' : s >= 6 ? '#3b82f6' : s >= 4 ? '#f59e0b' : '#ef4444'), borderRadius: 8 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    charts.pie = new Chart(document.getElementById('pieChart'), {
+        type: 'pie', data: { labels: Object.keys(ratings), datasets: [{ data: Object.values(ratings), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'] }] },
+        options: { responsive: true }
+    });
+
+    charts.doughnut = new Chart(document.getElementById('doughnutChart'), {
+        type: 'doughnut', data: { labels, datasets: [{ data: values, backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'] }] },
+        options: { responsive: true }
+    });
+
+    charts.radar = new Chart(document.getElementById('radarChart'), {
+        type: 'radar', data: { labels, datasets: [{ label: '達成率 (%)', data: achievements, backgroundColor: 'rgba(79, 70, 229, 0.2)', borderColor: '#4f46e5', pointBackgroundColor: '#4f46e5' }] },
+        options: { responsive: true, scales: { r: { beginAtZero: true, max: 100 } } }
+    });
+}
+
+// ==================== Edit / Delete ====================
+function editItem(index) {
+    const item = kpiData[index];
+    document.getElementById('editIndex').value = index;
+    document.getElementById('editName').value = item.name;
+    document.getElementById('editCategory').value = item.category;
+    document.getElementById('editDesc').value = item.desc;
+    document.getElementById('editQty').value = item.qty;
+    document.getElementById('editTarget').value = item.target;
+    document.getElementById('editPrice').value = item.price;
+    document.getElementById('editCurrency').value = item.currency;
+    document.getElementById('editWeight').value = item.weight;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function saveEdit() {
+    const index = parseInt(document.getElementById('editIndex').value);
+    const settings = getSettings();
+    kpiData[index] = {
+        ...kpiData[index],
+        name: document.getElementById('editName').value,
+        category: document.getElementById('editCategory').value,
+        desc: document.getElementById('editDesc').value,
+        qty: parseFloat(document.getElementById('editQty').value) || 0,
+        target: parseFloat(document.getElementById('editTarget').value) || 0,
+        price: parseFloat(document.getElementById('editPrice').value) || 0,
+        currency: document.getElementById('editCurrency').value,
+        weight: parseFloat(document.getElementById('editWeight').value) || 10
+    };
+    Object.assign(kpiData[index], calculateKPI(kpiData[index], settings));
+    closeEditModal(); renderTable(); updateStats(); updateCharts();
+    showNotification('✅ 已更新項目', 'success');
+}
+
+function deleteItem(index) {
+    if (confirm(`確定要刪除「${kpiData[index].name}」嗎？`)) {
+        kpiData.splice(index, 1); renderTable(); updateStats(); updateCharts();
+        showNotification('🗑️ 已刪除項目', 'info');
+    }
+}
+
+function clearAll() {
+    if (kpiData.length === 0) return;
+    if (confirm('確定要清除所有項目嗎？此操作無法復原。')) {
+        kpiData = []; renderTable(); updateStats(); updateCharts();
+        showNotification('🗑️ 已清除所有項目', 'info');
+    }
+}
+
+// ==================== Form Helpers ====================
+function clearForm() {
+    ['itemName', 'itemDesc', 'itemQty', 'itemTarget', 'itemPrice', 'customScore', 'baseValue'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('itemWeight').value = 10;
+    document.getElementById('weightDisplay').textContent = '10%';
+}
+
+function toggleAdvanced() {
+    const el = document.getElementById('advancedSettings');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
+
+// ==================== Sample Data ====================
+function addSampleData() {
+    const samples = [
+        { name: 'A產品銷售', category: 'product', desc: '主力產品A', qty: 1200, target: 1500, price: 350, currency: 'TWD', weight: 20 },
+        { name: 'B產品銷售', category: 'product', desc: '新上市產品B', qty: 800, target: 1000, price: 520, currency: 'TWD', weight: 15 },
+        { name: 'Q1業績目標', category: 'performance', desc: '第一季業績', qty: 2500000, target: 3000000, price: 1, currency: 'TWD', weight: 25 },
+        { name: 'Q2業績目標', category: 'performance', desc: '第二季業績', qty: 3200000, target: 3000000, price: 1, currency: 'TWD', weight: 25 },
+        { name: 'USD持有', category: 'currency', desc: '美元外幣存款', qty: 50000, target: 60000, price: 31.5, currency: 'USD', weight: 10 },
+        { name: '台積電股票', category: 'securities', desc: '2330.TW 持股', qty: 500, target: 1000, price: 890, currency: 'TWD', weight: 15 }
+    ];
+    const settings = getSettings();
+    samples.forEach(s => {
+        const calc = calculateKPI(s, settings);
+        kpiData.push({ ...s, ...calc, timestamp: new Date().toISOString() });
+    });
+    renderTable(); updateStats(); updateCharts();
+    showNotification('📋 已載入 6 筆範例資料', 'success');
+}
+
+function sortTable(field) {
+    kpiData.sort((a, b) => b[field] - a[field]);
+    renderTable();
+}
+
+function showNotification(msg, type = 'info') {
+    const div = document.createElement('div');
+    div.className = `notification ${type}`;
+    div.textContent = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+}
+
+async function exportPDF() {
+    if (kpiData.length === 0) {
+        return showNotification('請先載入範例資料', 'error');
+    }
+
+    showNotification('正在產生 PDF...', 'info');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const imgWidth = pageWidth - 20;
+
+        // ====================== 第 1 頁：表格 ======================
+        let container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-99999px';
+        container.style.width = '1100px';
+        container.style.background = '#ffffff';
+        container.style.padding = '40px 50px';
+        container.style.fontFamily = "'Microsoft JhengHei', 'PingFang TC', sans-serif";
+        document.body.appendChild(container);
+
+        container.innerHTML = `
+            <h1 style="color:#4f46e5; text-align:center; font-size:30px; margin-bottom:15px;">KPI 智能計算報告</h1>
+            <p style="text-align:center; color:#64748b; margin-bottom:30px;">
+                生成日期：${new Date().toLocaleDateString('zh-TW')} ${new Date().toLocaleTimeString('zh-TW')}
+            </p>
+            <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:35px; font-size:17px;">
+                <div><strong>總項目數：</strong>${kpiData.length}</div>
+                <div><strong>平均 KPI：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.kpiScore,0)/kpiData.length || 0)}</div>
+                <div><strong>總產值：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.totalValue,0))}</div>
+            </div>
+        `;
+
+        let tableHTML = `<table style="width:100%; border-collapse:collapse; font-size:14.5px;">
+            <thead><tr style="background:#4f46e5; color:white;">
+                <th style="padding:12px; border:1px solid #ddd; text-align:center;">#</th>
+                <th style="padding:12px; border:1px solid #ddd;">品項名稱</th>
+                <th style="padding:12px; border:1px solid #ddd;">類別</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:right;">數量</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:right;">目標</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:right;">達成率</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:right;">總產值</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:center;">權重</th>
+                <th style="padding:12px; border:1px solid #ddd; text-align:right;">KPI</th>
+                <th style="padding:12px; border:1px solid #ddd;">評級</th>
+            </tr></thead><tbody>`;
+
+        kpiData.forEach((item, i) => {
+            const cat = categoryConfig[item.category];
+            tableHTML += `<tr>
+                <td style="padding:10px; border:1px solid #ddd; text-align:center;">${i+1}</td>
+                <td style="padding:10px; border:1px solid #ddd;">${item.name}</td>
+                <td style="padding:10px; border:1px solid #ddd;">${cat.label}</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.qty)}</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.target)}</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.achievementRate)}%</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatCurrency(item.totalValue, item.currency)}</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:center;">${item.weight}%</td>
+                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.kpiScore)}</td>
+                <td style="padding:10px; border:1px solid #ddd;">${item.rating.label}</td>
+            </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        container.innerHTML += tableHTML;
+
+        const canvasTable = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        doc.addImage(canvasTable.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 10, imgWidth, Math.min((canvasTable.height * imgWidth) / canvasTable.width, pageHeight - 20));
+        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
+        const chartTitles = ['各項目 KPI 比較', '評級分佈', '產值分佈', '達成率趨勢'];
+
+        for (let i = 0; i < chartIds.length; i++) {
+            container.innerHTML = `<h1 style="color:#4f46e5; text-align:center; font-size:28px; margin:40px 0 30px;">${chartTitles[i]}</h1>`;
+
+            const canvas = document.getElementById(chartIds[i]);
+            if (!canvas) continue;
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png', 0.96);
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.display = 'block';
+            img.style.margin = '0 auto';
+            container.appendChild(img);
+
+            await new Promise(r => setTimeout(r, 300)); // 確保圖片載入
+
+            const canvasChart = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+            doc.addPage();
+            const imgH = (canvasChart.height * imgWidth) / canvasChart.width;
+            doc.addImage(canvasChart.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 15, imgWidth, Math.min(imgH, pageHeight - 30));
+        }
+
+        doc.save(`KPI報告_${new Date().toISOString().slice(0,10)}.pdf`);
+        showNotification('📄 PDF 已匯出', 'success');
+
+    } catch (err) {
+        console.error(err);
+        showNotification('PDF 產生失敗，請用 Chrome 重試', 'error');
+    } finally {
+        const containers = document.querySelectorAll('div[style*="left: -99999px"]');
+        containers.forEach(c => c.remove());
+    }
+}
+
+// ==================== Export PDF ====================
+async function exportPDF() {
+    if (kpiData.length === 0) {
+        return showNotification('請先載入範例資料', 'error');
+    }
+
+    showNotification('正在產生滿版 PDF...', 'info');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        const margin = 10;
+        const imgWidth = pageWidth - (margin * 2);
+
+        // ====================== 第 1 頁：表格 ======================
+        let container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-99999px';
+        container.style.width = '1200px';
+        container.style.background = '#ffffff';
+        container.style.padding = '40px 50px';
+        container.style.fontFamily = "'Microsoft JhengHei', 'PingFang TC', sans-serif";
+        document.body.appendChild(container);
+
+        container.innerHTML = `
+            <h1 style="color:#4f46e5; text-align:center; font-size:32px; margin-bottom:15px;">KPI 智能計算報告</h1>
+            <p style="text-align:center; color:#64748b; margin-bottom:30px; font-size:18px;">
+                生成日期：${new Date().toLocaleDateString('zh-TW')} ${new Date().toLocaleTimeString('zh-TW')}
+            </p>
+            <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:25px; border-radius:12px; margin-bottom:35px; font-size:20px;">
+                <div><strong>總項目數：</strong>${kpiData.length}</div>
+                <div><strong>平均 KPI：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.kpiScore,0)/kpiData.length || 0)}</div>
+                <div><strong>總產值：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.totalValue,0))}</div>
+            </div>
+        `;
+
+        let tableHTML = `<table style="width:100%; border-collapse:collapse; font-size:16px;">
+            <thead><tr style="background:#4f46e5; color:white;">
+                <th style="padding:15px; border:1px solid #ddd; text-align:center;">#</th>
+                <th style="padding:15px; border:1px solid #ddd;">品項名稱</th>
+                <th style="padding:15px; border:1px solid #ddd;">類別</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:right;">數量</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:right;">目標</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:right;">達成率</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:right;">總產值</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:center;">權重</th>
+                <th style="padding:15px; border:1px solid #ddd; text-align:right;">KPI</th>
+                <th style="padding:15px; border:1px solid #ddd;">評級</th>
+            </tr></thead><tbody>`;
+
+        kpiData.forEach((item, i) => {
+            const cat = categoryConfig[item.category];
+            tableHTML += `<tr>
+                <td style="padding:12px; border:1px solid #ddd; text-align:center;">${i+1}</td>
+                <td style="padding:12px; border:1px solid #ddd;"><strong>${item.name}</strong></td>
+                <td style="padding:12px; border:1px solid #ddd;">${cat.label}</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.qty)}</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.target)}</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.achievementRate)}%</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatCurrency(item.totalValue, item.currency)}</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:center;">${item.weight}%</td>
+                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.kpiScore)}</td>
+                <td style="padding:12px; border:1px solid #ddd; vertical-align:middle;">
+                    <span style="font-size:32px; vertical-align:middle; line-height:1;">${item.rating.icon}</span>
+                    <span style="vertical-align:middle;">${item.rating.label}</span>
+                </td>
+            </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        container.innerHTML += tableHTML;
+
+        const canvasTable = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        doc.addImage(canvasTable.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth, (canvasTable.height * imgWidth) / canvasTable.width);
+
+        // ====================== 第 2 頁以後：優化滿版圖表 ======================
+        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
+        const chartTitles = ['各項目 KPI 比較', '評級分佈', '產值分佈', '達成率趨勢'];
+
+        for (let i = 0; i < chartIds.length; i++) {
+            const canvas = document.getElementById(chartIds[i]);
+            if (!canvas) continue;
+
+            // 針對不同圖表調整容器樣式，防止圓餅圖等過高被切掉
+            container.innerHTML = `
+                <div style="width:100%; text-align:center; background:#ffffff;">
+                    <h1 style="color:#4f46e5; font-size:36px; margin:0; padding:30px 0;">${chartTitles[i]}</h1>
+                    <div id="chart-space" style="width:100%; display:flex; justify-content:center; align-items:center; padding-bottom:40px;"></div>
+                </div>
+            `;
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png', 1.0);
+
+            // 關鍵：寬度撐滿，但確保圓餅圖等不因高度跑版
+            img.style.width = '1100px';
+            img.style.height = 'auto';
+            container.querySelector('#chart-space').appendChild(img);
+
+            await new Promise(r => setTimeout(r, 500));
+
+            const canvasChart = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+
+            doc.addPage();
+
+            let renderedImgHeight = (canvasChart.height * imgWidth) / canvasChart.width;
+
+            // 如果計算出的高度超過頁面高度，強制縮放以適應頁面
+            let finalWidth = imgWidth;
+            if (renderedImgHeight > (pageHeight - 20)) {
+                renderedImgHeight = pageHeight - 25;
+                finalWidth = (canvasChart.width * renderedImgHeight) / canvasChart.height;
+            }
+
+            // 計算置中位置
+            const xPos = (pageWidth - finalWidth) / 2;
+            const yPos = (pageHeight - renderedImgHeight) / 2;
+
+            doc.addImage(
+                canvasChart.toDataURL('image/jpeg', 0.95),
+                'JPEG',
+                xPos,
+                yPos,
+                finalWidth,
+                renderedImgHeight
+            );
+        }
+
+        doc.save(`KPI報告_${new Date().toISOString().slice(0,10)}.pdf`);
+        showNotification('📄 PDF 圖示優化完成', 'success');
+
+    } catch (err) {
+        console.error(err);
+        showNotification('PDF 產生失敗', 'error');
+    } finally {
+        const containers = document.querySelectorAll('div[style*="left: -99999px"]');
+        containers.forEach(c => c.remove());
+    }
+}
+
+// ==================== Export PPT ====================
+async function exportPPT() {
+    if (kpiData.length === 0) {
+        return showNotification('請先載入範例資料', 'error');
+    }
+
+    showNotification('正在產生 PPT...', 'info');
+
+    await new Promise(r => setTimeout(r, 1000));
+
+    try {
+        const pptx = new PptxGenJS();
+        pptx.defineLayout({ name: 'CUSTOM', width: 13.33, height: 7.5 });
+        pptx.layout = 'CUSTOM';
+
+        const primary = '4F46E5';
+
+        // 標題頁
+        let s1 = pptx.addSlide();
+        s1.background = { fill: primary };
+        s1.addText('📊 KPI 智能計算報告', {
+            x: 1, y: 2.5, w: 11.33, h: 1.5,
+            fontSize: 36, color: 'FFFFFF', bold: true, align: 'center'
+        });
+
+        // 表格頁 - 強力置中
+        let s2 = pptx.addSlide();
+        s2.addText('📋 KPI 項目明細', {
+            x: 0.5, y: 0.4, w: 12, h: 0.8,
+            fontSize: 26, color: primary, bold: true, align: 'center'
+        });
+
+        const tableRows = kpiData.map((item, i) => [
+            (i+1).toString(),
+            item.name.length > 18 ? item.name.substring(0,18)+'..' : item.name,
+            categoryConfig[item.category].label,
+            formatNumber(item.qty),
+            formatNumber(item.target),
+            formatNumber(item.achievementRate) + '%',
+            formatCurrency(item.totalValue, item.currency),
+            item.weight + '%',
+            formatNumber(item.kpiScore),
+            item.rating.label
+        ]);
+
+        s2.addTable([['#','品項','類別','數量','目標','達成率','總產值','權重','KPI','評級'], ...tableRows], {
+            x: 1.0,           // 更靠中間
+            y: 1.4,
+            w: 11.3,          // 再縮小總寬度
+            colW: [0.55, 2.0, 1.5, 1.0, 1.0, 1.2, 1.55, 0.8, 0.95, 1.35],
+            fontSize: 9.0,
+            color: '1E293B',
+            align: 'center',
+            border: { pt: 1, color: 'E2E8F0' },
+            rowStripe: { fill: 'F8FAFC' },
+            autoPage: true
+        });
+
+        // 圖表頁
+        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
+        const titles = ['📊 各項目 KPI 比較', '🎯 評級分佈', '💰 產值分佈', '📈 達成率趨勢'];
+
+        for (let i = 0; i < chartIds.length; i++) {
+            const canvas = document.getElementById(chartIds[i]);
+            if (!canvas) continue;
+
+            const dataUrl = canvas.toDataURL('image/png', 0.95);
+
+            let slide = pptx.addSlide();
+            slide.addText(titles[i], {
+                x: 0.5, y: 0.4, w: 12, h: 0.9,
+                fontSize: 26, color: primary, bold: true, align: 'center'
+            });
+
+            slide.addImage({
+                data: dataUrl,
+                x: 0.8,
+                y: 1.6,
+                w: 11.7,
+                h: 5.1,
+                sizing: { type: 'contain' }
+            });
+        }
+
+        pptx.writeFile(`KPI報告_${new Date().toISOString().slice(0,10)}.pptx`);
+        showNotification('📊 PPT 已成功匯出', 'success');
+
+    } catch (err) {
+        console.error(err);
+        showNotification('PPT 產生失敗', 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderTable();
+    updateStats();
+    updateCharts();
+});
+</script>
+</body>
+</html>
