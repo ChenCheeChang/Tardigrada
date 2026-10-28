@@ -1,1090 +1,3338 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI 智能計算系統</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --primary-dark: #3730a3;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-            --bg: #f0f2f5;
-            --card: #ffffff;
-            --text: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 4px 24px rgba(0,0,0,0.08);
-            --radius: 16px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            font-size: 15px; /* 基底字體 ≥12px */
-            line-height: 1.6;
-        }
-
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary), var(--primary-light));
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(79,70,229,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .header-actions { display: flex; gap: 10px; }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .btn:active { transform: translateY(0); }
-        .btn-pdf { background: #ef4444; color: white; }
-        .btn-ppt { background: #d97706; color: white; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-warning { background: var(--warning); color: white; }
-        .btn-info { background: var(--info); color: white; }
-        .btn-outline { background: transparent; color: white; border: 2px solid white; }
-        .btn-outline:hover { background: white; color: var(--primary); }
-        .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
-
-        /* Main Layout */
-        .main-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-
-        /* Dashboard Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .stat-card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-        }
-        .stat-card:nth-child(1)::before { background: var(--primary); }
-        .stat-card:nth-child(2)::before { background: var(--success); }
-        .stat-card:nth-child(3)::before { background: var(--warning); }
-        .stat-card:nth-child(4)::before { background: var(--info); }
-        .stat-card:nth-child(5)::before { background: var(--danger); }
-        .stat-card .stat-icon { font-size: 28px; margin-bottom: 6px; }
-        .stat-card .stat-value { font-size: 26px; font-weight: 700; color: var(--text); }
-        .stat-card .stat-label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
-
-        /* Cards */
-        .card {
-            background: var(--card);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-            overflow: hidden;
-        }
-        .card-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        }
-        .card-header h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .card-body { padding: 20px; }
-
-        /* Form */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-light); }
-        .form-group input, .form-group select, .form-group textarea {
-            padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
-            font-size: 14px; transition: all 0.2s; background: #fafbfc;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white;
-        }
-        .form-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
-
-        /* Table */
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        thead th {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            color: white; padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap;
-        }
-        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
-        tbody tr:hover { background: #f0f4ff; }
-        tbody td { padding: 10px 14px; vertical-align: middle; }
-        .kpi-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-            border-radius: 16px; font-weight: 700; font-size: 12px;
-        }
-        .kpi-excellent { background: #d1fae5; color: #065f46; }
-        .kpi-good { background: #dbeafe; color: #1e40af; }
-        .kpi-average { background: #fef3c7; color: #92400e; }
-        .kpi-poor { background: #fee2e2; color: #991b1b; }
-        .category-tag {
-            display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
-        }
-        .cat-product { background: #ede9fe; color: #5b21b6; }
-        .cat-performance { background: #d1fae5; color: #065f46; }
-        .cat-currency { background: #dbeafe; color: #1e40af; }
-        .cat-securities { background: #fef3c7; color: #92400e; }
-        .cat-other { background: #f1f5f9; color: #475569; }
-
-        /* Chart Container */
-        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
-        .chart-box { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-        .chart-box h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
-        .chart-box canvas { max-height: 300px; }
-
-        /* Modal */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);
-        }
-        .modal-overlay.active { display: flex; }
-        .modal {
-            background: var(--card); border-radius: var(--radius); width: 90%; max-width: 700px;
-            max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalIn 0.3s ease;
-        }
-        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { font-size: 18px; }
-        .modal-close {
-            width: 32px; height: 32px; border: none; background: #f1f5f9; border-radius: 50%;
-            font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-        }
-        .modal-close:hover { background: #fee2e2; color: var(--danger); }
-        .modal-body { padding: 20px; }
-
-        /* Weight Slider */
-        .weight-control { display: flex; align-items: center; gap: 10px; }
-        .weight-control input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; background: var(--border); border-radius: 3px; }
-        .weight-control input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; cursor: pointer;
-        }
-        .weight-value { min-width: 40px; text-align: center; font-weight: 700; color: var(--primary); font-size: 14px; }
-
-        /* Progress Bar */
-        .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-
-        /* Empty State & Notification */
-        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-light); }
-        .empty-state .empty-icon { font-size: 56px; margin-bottom: 12px; }
-        .empty-state h3 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
-        .notification {
-            position: fixed; top: 80px; right: 20px; padding: 14px 20px; border-radius: 12px;
-            color: white; font-weight: 600; z-index: 2000; animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        }
-        .notification.success { background: var(--success); }
-        .notification.error { background: var(--danger); }
-        .notification.info { background: var(--info); }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-
-        /* Settings & Toggles */
-        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
-        .setting-row:last-child { border-bottom: none; }
-        .setting-label { font-weight: 600; font-size: 14px; }
-        .setting-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
-        .toggle {
-            width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s;
-        }
-        .toggle.active { background: var(--primary); }
-        .toggle::after {
-            content: ''; width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute;
-            top: 2px; left: 2px; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .toggle.active::after { transform: translateX(20px); }
-        .select-inline { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; background: white; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header { padding: 16px 20px; flex-direction: column; gap: 12px; }
-            .header h1 { font-size: 20px; }
-            .main-container { padding: 16px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .form-grid { grid-template-columns: 1fr; }
-            .chart-grid { grid-template-columns: 1fr; }
-            .header-actions { width: 100%; justify-content: center; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>微觀大作戰：Q版水形蟲（水熊蟲）闖關生存記</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06131f;
+      font-family: 'Noto Sans TC', 'Inter', sans-serif;
+      touch-action: none;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    /* High-performance microscope vignette (no heavy backdrop-filter to prevent mobile GPU lag) */
+    .microscope-overlay {
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 50%,
+          rgba(16, 48, 68, 0) 56%,
+          rgba(4, 16, 28, 0.5) 80%,
+          rgba(1, 5, 10, 0.94) 100%);
+    }
+    .glass-panel {
+      background: rgba(8, 22, 36, 0.90);
+      border: 1px solid rgba(103, 232, 249, 0.30);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-6px) scale(1.03); }
+    }
+    .animate-float {
+      animation: floatSlow 3.2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.45); }
+      50% { box-shadow: 0 0 20px 6px rgba(34, 211, 238, 0.25); }
+    }
+    .btn-glow {
+      animation: pulseGlow 2.2s infinite;
+    }
+    .skin-btn.active {
+      border-color: #22d3ee;
+      background: rgba(34, 211, 238, 0.24);
+      transform: translateY(-2px);
+    }
+    /* D-Pad Cross Button Active Styling */
+    .dpad-btn {
+      background: rgba(12, 34, 54, 0.88);
+      border: 2px solid rgba(103, 232, 249, 0.45);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      transition: transform 0.06s ease, background-color 0.06s ease;
+    }
+    .dpad-btn.pressed, .dpad-btn:active {
+      background: rgba(34, 211, 238, 0.78);
+      border-color: #ffffff;
+      color: #04101a;
+      transform: scale(0.92);
+    }
+  </style>
 </head>
-<body>
+<body class="relative w-full h-full overflow-hidden text-cyan-50 select-none">
 
-<!-- Header -->
-<div class="header">
-    <h1>📊 KPI 智能計算系統</h1>
-    <div class="header-actions">
-        <button class="btn btn-outline" onclick="openSettings()">⚙️ 設定</button>
-        <button class="btn btn-outline" onclick="exportPDF()">📄 匯出 PDF</button>
-        <button class="btn btn-outline" onclick="exportPPT()">📊 匯出 PPT</button>
-    </div>
-</div>
+  <!-- Main Microscope Canvas -->
+  <canvas id="gameCanvas"></canvas>
 
-<!-- Main Container -->
-<div class="main-container">
-    <!-- Dashboard Stats -->
-    <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" id="totalItems">0</div><div class="stat-label">總項目數</div></div>
-        <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value" id="avgKPI">0.00</div><div class="stat-label">平均 KPI</div></div>
-        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="totalValue">0</div><div class="stat-label">總產值</div></div>
-        <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value" id="bestItem">-</div><div class="stat-label">最佳項目</div></div>
-        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value" id="achievementRate">0%</div><div class="stat-label">目標達成率</div></div>
-    </div>
+  <!-- Microscope Optical Lens Vignette Overlay -->
+  <div id="lensOverlay" class="microscope-overlay fixed inset-0 z-10"></div>
 
-    <!-- Input Card -->
-    <div class="card">
-        <div class="card-header">
-            <h2>➕ 新增 KPI 項目</h2>
-            <button class="btn btn-sm btn-primary" onclick="toggleAdvanced()">🔧 進階設定</button>
+  <!-- Top HUD Bar -->
+  <header class="fixed top-0 left-0 right-0 z-20 p-2 sm:p-3 flex items-start justify-between gap-2 pointer-events-none">
+    <!-- Left: Stage Progress, 10 Rivals Goal, 5-Dot Growth & Stage Mission -->
+    <div class="glass-panel rounded-2xl px-2.5 py-2 sm:px-3.5 sm:py-2.5 pointer-events-auto flex flex-col gap-1 min-w-[205px] sm:min-w-[270px] max-w-[64vw]">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-[11px] sm:text-xs font-bold tracking-wider text-cyan-300 uppercase">OPTICAL <span id="hudZoom">400x</span></span>
         </div>
-        <div class="card-body">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>品項名稱</label>
-                    <input type="text" id="itemName" placeholder="例如：A產品、業績目標...">
-                </div>
-                <div class="form-group">
-                    <label>類別</label>
-                    <select id="itemCategory">
-                        <option value="product">📦 物品/產品</option>
-                        <option value="performance">📈 業績</option>
-                        <option value="currency">💱 貨幣</option>
-                        <option value="securities">📊 有價證券</option>
-                        <option value="other">📌 其他</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>內容描述</label>
-                    <input type="text" id="itemDesc" placeholder="簡短描述此項目...">
-                </div>
-                <div class="form-group">
-                    <label>數量</label>
-                    <input type="number" id="itemQty" placeholder="0" min="0" step="any">
-                </div>
-                <div class="form-group">
-                    <label>目標數量</label>
-                    <input type="number" id="itemTarget" placeholder="0" min="0" step="any">
-                </div>
-                <div class="form-group">
-                    <label>單位價格/價值</label>
-                    <input type="number" id="itemPrice" placeholder="0.00" min="0" step="any">
-                </div>
-                <div class="form-group">
-                    <label>貨幣單位</label>
-                    <select id="currencyUnit">
-                        <option value="TWD">🇹🇼 TWD (台幣)</option><option value="USD">🇺🇸 USD (美金)</option>
-                        <option value="EUR">🇪🇺 EUR (歐元)</option><option value="JPY">🇯🇵 JPY (日圓)</option>
-                        <option value="CNY">🇨🇳 CNY (人民幣)</option><option value="HKD">🇭🇰 HKD (港幣)</option>
-                        <option value="GBP">🇬🇧 GBP (英鎊)</option><option value="KRW">🇰🇷 KRW (韓元)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>權重 (%)</label>
-                    <div class="weight-control">
-                        <input type="range" id="itemWeight" min="1" max="100" value="10" oninput="document.getElementById('weightDisplay').textContent=this.value+'%'">
-                        <span class="weight-value" id="weightDisplay">10%</span>
-                    </div>
-                </div>
-            </div>
+        <span id="hudStageBadge" class="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/25 border border-amber-400/50 text-amber-200 font-extrabold">第 1 / 5 關</span>
+      </div>
 
-            <div id="advancedSettings" style="display:none; margin-top:20px;">
-                <div style="background:#f0f4ff; border:2px solid var(--primary-light); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
-                    <div style="font-size:13px; color:var(--text-light); margin-bottom:6px;">KPI 計算公式</div>
-                    <div style="font-size:16px; font-weight:700; color:var(--primary-dark); font-family:monospace;">KPI = (實際數量 ÷ 目標數量) × 權重 × 100</div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>評分標準</label>
-                        <select id="scoringMethod">
-                            <option value="percentage">百分比達成率</option>
-                            <option value="points">分數制 (0-100)</option>
-                            <option value="custom">自訂公式</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>自訂分數 (若選分數制)</label>
-                        <input type="number" id="customScore" placeholder="0-100" min="0" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>基準值 (自訂公式用)</label>
-                        <input type="number" id="baseValue" placeholder="基準數值" step="any">
-                    </div>
-                    <div class="form-group">
-                        <label>評級門檻 - 優秀</label>
-                        <input type="number" id="thresholdExcellent" value="90" min="0" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>評級門檻 - 良好</label>
-                        <input type="number" id="thresholdGood" value="70" min="0" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>評級門檻 - 普通</label>
-                        <input type="number" id="thresholdAverage" value="50" min="0" max="100">
-                    </div>
-                </div>
-            </div>
+      <!-- Goal 1: Eat 10 Rivals in Current Stage (+10% size each) -->
+      <div class="flex items-center justify-between text-[11px] sm:text-xs">
+        <span class="text-cyan-100/90 font-semibold">🎯 吃對手(+10%):</span>
+        <span class="font-black text-emerald-300"><span id="hudEatCount">0</span> / <span id="hudEatTarget">10</span> 隻</span>
+      </div>
+      <div class="w-full h-1.5 bg-slate-900/90 rounded-full overflow-hidden border border-cyan-500/30">
+        <div id="hudProgress" class="h-full bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400" style="width: 0%;"></div>
+      </div>
 
-            <div class="form-actions">
-                <button class="btn btn-danger" onclick="clearForm()">🗑️ 清除</button>
-                <button class="btn btn-warning" onclick="addSampleData()">📋 載入範例</button>
-                <button class="btn btn-success" onclick="addItem()">✅ 新增項目</button>
-            </div>
+      <!-- 5 Small Dots -> +10% Size Progress -->
+      <div class="flex items-center justify-between text-[11px] sm:text-xs">
+        <span class="text-cyan-100/90 font-semibold">✨ 小點點(+10%):</span>
+        <span class="font-black text-cyan-300"><span id="hudDotCount">0</span> / 5 個</span>
+      </div>
+      <div class="w-full h-1.5 bg-slate-900/90 rounded-full overflow-hidden border border-cyan-500/30">
+        <div id="hudDotBar" class="h-full bg-gradient-to-r from-sky-400 to-indigo-400" style="width: 0%;"></div>
+      </div>
+
+      <!-- Goal 2: Stage-Specific Mission -->
+      <div class="bg-slate-900/80 border border-cyan-400/25 rounded-xl px-2 py-1 mt-0.5">
+        <div class="flex items-center justify-between gap-1 text-[10px] sm:text-xs">
+          <span id="hudMissionTitle" class="font-bold text-amber-300 truncate">🌀 任務：繞著中央光圈跑完一圈</span>
+          <span id="hudMissionStatus" class="font-extrabold text-white whitespace-nowrap">0%</span>
         </div>
+        <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden mt-0.5">
+          <div id="hudMissionBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-cyan-200/85 pt-0.5">
+        <span>體型: <strong id="hudSize" class="text-white">20.0</strong> μm</span>
+        <span>場上細菌: <strong id="hudAliveCount" class="text-amber-300">16</strong></span>
+      </div>
+
+      <!-- Active Buffs Status Bar (Invincibility 10s / Tentacles 10s) -->
+      <div id="activeBuffsBox" class="hidden flex flex-col gap-1 mt-0.5">
+        <div id="invincibilityBuffRow" class="hidden bg-amber-950/90 border border-amber-400 rounded-lg px-2 py-0.5 flex items-center justify-between text-[10px] font-bold text-amber-200">
+          <span>🛡️ 無敵護盾中</span>
+          <span id="invincibilityTimerText" class="text-yellow-300">10.0s</span>
+        </div>
+        <div id="tentacleBuffRow" class="hidden bg-fuchsia-950/90 border border-fuchsia-400 rounded-lg px-2 py-0.5 flex items-center justify-between text-[10px] font-bold text-fuchsia-200">
+          <span>🐙 觸手狂暴攻擊中</span>
+          <span id="tentacleTimerText" class="text-pink-300">10.0s</span>
+        </div>
+      </div>
+
+      <!-- Urgent Internal Parasite 10s Countdown Bar -->
+      <div id="parasiteAlertBox" class="hidden bg-rose-950/95 border-2 border-rose-500 rounded-xl px-2 py-1 mt-0.5">
+        <div class="flex items-center justify-between text-[10px] sm:text-xs font-black text-rose-200">
+          <span>☣️ 寄生反噬！快吃糖果！</span>
+          <span id="parasiteTimerText" class="text-yellow-300">10.0s</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden mt-0.5">
+          <div id="parasiteTimerBar" class="h-full bg-gradient-to-r from-rose-500 via-orange-400 to-lime-400" style="width: 100%;"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="card">
-        <div class="card-header">
-            <h2>📋 KPI 項目明細</h2>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-sm btn-info" onclick="sortTable('kpiScore')">📊 依KPI排序</button>
-                <button class="btn btn-sm btn-danger" onclick="clearAll()">🗑️ 清除全部</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-wrapper">
-                <table id="kpiTable">
-                    <thead>
-                        <tr>
-                            <th>#</th><th>品項名稱</th><th>類別</th><th>內容描述</th>
-                            <th>數量</th><th>目標</th><th>達成率</th><th>單位價值</th>
-                            <th>總產值</th><th>權重</th><th>KPI 分數</th><th>評級</th><th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="kpiTableBody"></tbody>
-                </table>
-                <div class="empty-state" id="emptyState">
-                    <div class="empty-icon">📭</div>
-                    <h3>尚無 KPI 項目</h3>
-                    <p>請使用上方表單新增項目，或載入範例資料</p>
-                </div>
-            </div>
-        </div>
+    <!-- Center Dynamic Event Toast -->
+    <div id="eventToast" class="hidden glass-panel rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-bold text-amber-200 border-amber-400/50 shadow-lg max-w-xs sm:max-w-md text-center">
+      🍬 發現高能糖果！吃掉立馬長大 30% 並消化寄生菌！
     </div>
 
-    <!-- Charts -->
-    <div class="chart-grid">
-        <div class="chart-box"><h3>📊 各项目 KPI 比較</h3><canvas id="barChart"></canvas></div>
-        <div class="chart-box"><h3>🎯 評級分佈</h3><canvas id="pieChart"></canvas></div>
-        <div class="chart-box"><h3>💰 產值分佈</h3><canvas id="doughnutChart"></canvas></div>
-        <div class="chart-box"><h3>📈 達成率趨勢</h3><canvas id="radarChart"></canvas></div>
-    </div>
-</div>
+    <!-- Right: Controls (Sound, Pause, Radar & Ecological Stats) -->
+    <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+      <div class="flex items-center gap-1.5">
+        <button id="btnAudioToggle" type="button" title="切換音樂與布滋音效" class="glass-panel hover:bg-cyan-900/50 active:scale-95 transition rounded-xl px-2.5 py-1.5 flex items-center gap-1 text-xs font-semibold text-cyan-100">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel" class="hidden sm:inline">音效開</span>
+        </button>
+        <button id="btnPause" type="button" title="暫停遊戲" class="glass-panel hover:bg-cyan-900/50 active:scale-95 transition rounded-xl px-2.5 py-1.5 flex items-center gap-1 text-xs font-semibold text-cyan-100">
+          <span id="pauseIcon">⏸️</span>
+          <span class="hidden sm:inline">暫停</span>
+        </button>
+      </div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
-    <div class="modal">
-        <div class="modal-header"><h3>⚙️ 系統設定</h3><button class="modal-close" onclick="closeSettings()">✕</button></div>
-        <div class="modal-body">
-            <div class="setting-row"><div><div class="setting-label">自動計算 KPI</div><div class="setting-desc">新增項目時自動計算 KPI 值</div></div><div class="toggle active" id="toggleAutoCalc" onclick="this.classList.toggle('active')"></div></div>
-            <div class="setting-row"><div><div class="setting-label">顯示圖表</div><div class="setting-desc">在頁面中顯示視覺化圖表</div></div><div class="toggle active" id="toggleCharts" onclick="this.classList.toggle('active')"></div></div>
-            <div class="setting-row"><div><div class="setting-label">匯出包含圖表</div><div class="setting-desc">PDF/PPT 匯出時包含圖表影像</div></div><div class="toggle active" id="toggleExportCharts" onclick="this.classList.toggle('active')"></div></div>
-            <div class="setting-row"><div><div class="setting-label">KPI 計算模式</div><div class="setting-desc">選擇預設的 KPI 計算方式</div></div><select class="select-inline" id="calcMode"><option value="standard">標準模式</option><option value="weighted">加權模式</option><option value="custom">自訂模式</option></select></div>
-            <div class="setting-row"><div><div class="setting-label">小數點位數</div><div class="setting-desc">設定數值顯示的小數位數</div></div><select class="select-inline" id="decimalPlaces"><option value="0">0 位</option><option value="1">1 位</option><option value="2" selected>2 位</option><option value="3">3 位</option></select></div>
+      <!-- Circular Petri-Dish Mini Radar -->
+      <div class="glass-panel rounded-full p-1 relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+        <canvas id="radarCanvas" width="80" height="80" class="w-full h-full rounded-full"></canvas>
+        <span class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-cyan-400/40 text-[8px] px-1.5 rounded-full text-cyan-300 font-semibold whitespace-nowrap">顯微雷達</span>
+      </div>
+
+      <!-- Mini Ecological Leaderboard / Status (Desktop) -->
+      <div class="glass-panel rounded-xl px-2.5 py-1.5 text-[10px] text-cyan-100/90 hidden md:flex flex-col gap-0.5 min-w-[145px]">
+        <div class="flex items-center justify-between">
+          <span>🟢 可吞噬(較小)</span>
+          <span id="hudEdibleCount" class="font-bold text-emerald-300">0</span>
         </div>
-    </div>
-</div>
-
-<!-- Edit Modal -->
-<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
-    <div class="modal">
-        <div class="modal-header"><h3>✏️ 編輯項目</h3><button class="modal-close" onclick="closeEditModal()">✕</button></div>
-        <div class="modal-body">
-            <input type="hidden" id="editIndex">
-            <div class="form-grid">
-                <div class="form-group"><label>品項名稱</label><input type="text" id="editName"></div>
-                <div class="form-group"><label>類別</label><select id="editCategory"><option value="product">📦 物品/產品</option><option value="performance">📈 業績</option><option value="currency">💱 貨幣</option><option value="securities">📊 有價證券</option><option value="other">📌 其他</option></select></div>
-                <div class="form-group"><label>內容描述</label><input type="text" id="editDesc"></div>
-                <div class="form-group"><label>數量</label><input type="number" id="editQty" min="0" step="any"></div>
-                <div class="form-group"><label>目標數量</label><input type="number" id="editTarget" min="0" step="any"></div>
-                <div class="form-group"><label>單位價格/價值</label><input type="number" id="editPrice" min="0" step="any"></div>
-                <div class="form-group"><label>貨幣單位</label><select id="editCurrency"><option value="TWD">🇹🇼 TWD</option><option value="USD">🇺🇸 USD</option><option value="EUR">🇪🇺 EUR</option><option value="JPY">🇯🇵 JPY</option><option value="CNY">🇨🇳 CNY</option><option value="HKD">🇭🇰 HKD</option><option value="GBP">🇬🇧 GBP</option><option value="KRW">🇰🇷 KRW</option></select></div>
-                <div class="form-group"><label>權重 (%)</label><input type="number" id="editWeight" min="1" max="100" value="10"></div>
-            </div>
-            <div class="form-actions" style="margin-top:20px;"><button class="btn btn-primary" onclick="saveEdit()">💾 儲存修改</button></div>
+        <div class="flex items-center justify-between">
+          <span>🔴 危險天敵(較大)</span>
+          <span id="hudDangerCount" class="font-bold text-rose-400">0</span>
         </div>
+        <div class="flex items-center justify-between">
+          <span>🍬 糖果(+30%)</span>
+          <span id="hudCandyCount" class="font-bold text-amber-300">0</span>
+        </div>
+      </div>
     </div>
-</div>
+  </header>
 
-<script>
-// ==================== Data Store ====================
-let kpiData = [];
-let charts = {};
+  <!-- Bottom Controller Bar: Left = Cross D-Pad (十字方向鍵), Right = Circular Control & Power-Up Buttons (圓形控制鍵組) -->
+  <footer class="fixed bottom-0 left-0 right-0 z-20 p-2.5 sm:p-5 flex items-end justify-between pointer-events-none">
 
-// ==================== Category Config ====================
-const categoryConfig = {
-    product: { label: '📦 物品/產品', class: 'cat-product' },
-    performance: { label: '📈 業績', class: 'cat-performance' },
-    currency: { label: '💱 貨幣', class: 'cat-currency' },
-    securities: { label: '📊 有價證券', class: 'cat-securities' },
-    other: { label: '📌 其他', class: 'cat-other' }
-};
+    <!-- LEFT: Cross D-Pad (十字方向鍵) -->
+    <div class="pointer-events-auto flex flex-col items-center gap-1">
+      <div id="dpadContainer" class="relative w-36 h-36 sm:w-44 sm:h-44 select-none touch-none">
+        <!-- Cross background plate -->
+        <div class="absolute inset-3 rounded-full bg-slate-950/65 border border-cyan-400/25 pointer-events-none"></div>
 
-const currencySymbols = {
-    TWD: 'NT$', USD: '$', EUR: '€', JPY: '¥', CNY: '¥', HKD: 'HK$', GBP: '£', KRW: '₩'
-};
+        <!-- UP Button -->
+        <button id="dpadUp" type="button" data-dir="up" aria-label="向上移動"
+          class="dpad-btn absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-t-2xl rounded-b-md flex items-center justify-center text-cyan-200 text-lg sm:text-xl font-black">
+          ▲
+        </button>
+        <!-- DOWN Button -->
+        <button id="dpadDown" type="button" data-dir="down" aria-label="向下移動"
+          class="dpad-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-b-2xl rounded-t-md flex items-center justify-center text-cyan-200 text-lg sm:text-xl font-black">
+          ▼
+        </button>
+        <!-- LEFT Button -->
+        <button id="dpadLeft" type="button" data-dir="left" aria-label="向左移動"
+          class="dpad-btn absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-l-2xl rounded-r-md flex items-center justify-center text-cyan-200 text-lg sm:text-xl font-black">
+          ◀
+        </button>
+        <!-- RIGHT Button -->
+        <button id="dpadRight" type="button" data-dir="right" aria-label="向右移動"
+          class="dpad-btn absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-r-2xl rounded-l-md flex items-center justify-center text-cyan-200 text-lg sm:text-xl font-black">
+          ▶
+        </button>
+        <!-- Center Pivot Cap -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-900/95 border border-cyan-500/30 flex items-center justify-center pointer-events-none">
+          <span class="w-3.5 h-3.5 rounded-full bg-cyan-400/60"></span>
+        </div>
+      </div>
+      <span class="text-[10px] sm:text-xs font-bold text-cyan-300/90 bg-slate-950/75 px-2.5 py-0.5 rounded-full border border-cyan-500/25">十字方向鍵 (可滑動轉向)</span>
+    </div>
 
-// ==================== Core Functions ====================
-function calculateKPI(item, settings = {}) {
-    const method = settings.method || 'percentage';
-    let kpiScore = 0, achievementRate = 0;
+    <!-- RIGHT: Circular Control Button & 4 Power-Up Action Buttons (圓形控制鍵組) -->
+    <div class="pointer-events-auto flex flex-col items-end gap-2">
+      <!-- Top Row of Power-Up Item Circular Buttons (Shield 10s, Tentacles 10s, Emergency Jump) -->
+      <div class="flex items-center gap-2">
+        <!-- Invincibility 10s Button -->
+        <button id="btnShieldItem" type="button" class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 border-2 border-yellow-200 shadow-md active:scale-90 transition flex flex-col items-center justify-center text-slate-950 font-black">
+          <span class="text-base sm:text-lg leading-none">🛡️</span>
+          <span class="text-[9px] sm:text-[10px] leading-tight">無敵10s</span>
+          <span id="badgeShieldCount" class="absolute -top-1 -right-1 bg-slate-950 text-amber-300 border border-amber-400 rounded-full text-[10px] px-1.5 font-extrabold">1</span>
+        </button>
 
-    if (method === 'percentage') {
-        achievementRate = item.target > 0 ? (item.qty / item.target) * 100 : (item.qty > 0 ? 100 : 0);
-        kpiScore = (achievementRate / 100) * item.weight;
-    } else if (method === 'points') {
-        kpiScore = ((settings.customScore || 0) / 100) * item.weight;
-        achievementRate = settings.customScore || 0;
-    } else {
-        achievementRate = (settings.baseValue || 0) > 0 ? (item.qty / settings.baseValue) * 100 : 0;
-        kpiScore = (achievementRate / 100) * item.weight;
-    }
+        <!-- Tentacle Attack 10s Button -->
+        <button id="btnTentacleItem" type="button" class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-700 border-2 border-pink-200 shadow-md active:scale-90 transition flex flex-col items-center justify-center text-white font-black">
+          <span class="text-base sm:text-lg leading-none">🐙</span>
+          <span class="text-[9px] sm:text-[10px] leading-tight">觸手10s</span>
+          <span id="badgeTentacleCount" class="absolute -top-1 -right-1 bg-slate-950 text-pink-300 border border-pink-400 rounded-full text-[10px] px-1.5 font-extrabold">1</span>
+        </button>
 
-    return {
-        kpiScore: Math.min(kpiScore, item.weight),
-        achievementRate: Math.min(achievementRate, 999.99),
-        totalValue: item.qty * item.price,
-        rating: getRating(achievementRate, settings)
-    };
-}
+        <!-- Emergency Jump Button -->
+        <button id="btnJumpItem" type="button" class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 border-2 border-emerald-200 shadow-md active:scale-90 transition flex flex-col items-center justify-center text-slate-950 font-black">
+          <span class="text-base sm:text-lg leading-none">🦘</span>
+          <span class="text-[9px] sm:text-[10px] leading-tight">緊急跳躍</span>
+          <span id="badgeJumpCount" class="absolute -top-1 -right-1 bg-slate-950 text-emerald-300 border border-emerald-400 rounded-full text-[10px] px-1.5 font-extrabold">2</span>
+        </button>
+      </div>
 
-function getRating(rate, settings = {}) {
-    const ex = settings.excellent || 90, gd = settings.good || 70, av = settings.average || 50;
-    if (rate >= ex) return { label: '優秀', class: 'kpi-excellent', icon: '🏆' };
-    if (rate >= gd) return { label: '良好', class: 'kpi-good', icon: '⭐' };
-    if (rate >= av) return { label: '普通', class: 'kpi-average', icon: '📋' };
-    return { label: '待加強', class: 'kpi-poor', icon: '⚠️' };
-}
+      <!-- Main Bottom Row: Paralyze Bullet Circular Button + Primary Circular Control Key (主圓形控制鍵) -->
+      <div class="flex items-center gap-2.5">
+        <!-- 5 Paralyzing Bullets Button -->
+        <button id="btnShootBullet" type="button" class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-cyan-400 border-2 border-cyan-100 shadow-lg active:scale-90 transition flex flex-col items-center justify-center text-white font-black">
+          <span class="text-lg sm:text-xl leading-none">⚡</span>
+          <span class="text-[10px] sm:text-[11px] leading-tight">麻痺子彈</span>
+          <span id="badgeBulletCount" class="absolute -top-1.5 -right-1 bg-slate-950 text-cyan-300 border border-cyan-400 rounded-full text-[10px] px-1.5 font-extrabold">5發</span>
+        </button>
 
-function getSettings() {
-    return {
-        method: document.getElementById('scoringMethod')?.value || 'percentage',
-        customScore: parseFloat(document.getElementById('customScore')?.value) || 0,
-        baseValue: parseFloat(document.getElementById('baseValue')?.value) || 0,
-        excellent: parseFloat(document.getElementById('thresholdExcellent')?.value) || 90,
-        good: parseFloat(document.getElementById('thresholdGood')?.value) || 70,
-        average: parseFloat(document.getElementById('thresholdAverage')?.value) || 50,
-        decimals: parseInt(document.getElementById('decimalPlaces')?.value || 2)
-    };
-}
+        <!-- Primary Circular Control Button (圓形控制鍵：噴射衝刺) -->
+        <div class="flex flex-col items-center gap-1">
+          <button id="btnDash" type="button" class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-blue-600 border-4 border-white shadow-xl active:scale-90 transition flex flex-col items-center justify-center text-slate-950 font-black">
+            <span class="text-xl sm:text-2xl leading-none">💦</span>
+            <span class="text-[11px] sm:text-xs mt-0.5 tracking-tight">噴射衝刺</span>
+            <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+              <circle id="dashCooldownRing" cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="5" stroke-dasharray="289" stroke-dashoffset="0" />
+            </svg>
+          </button>
+          <span class="text-[10px] font-bold text-cyan-200 bg-slate-950/75 px-2 py-0.5 rounded-full border border-cyan-500/25">圓形控制鍵</span>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-function formatNumber(num) {
-    return Number(num).toLocaleString('zh-TW', { minimumFractionDigits: getSettings().decimals, maximumFractionDigits: getSettings().decimals });
-}
+  <!-- Start / Pause / Stage Clear / End Modal Overlay -->
+  <div id="modalOverlay" class="fixed inset-0 z-30 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 overflow-y-auto">
+    <div class="glass-panel rounded-3xl max-w-lg w-full p-4 sm:p-6 text-center border-cyan-300/40 relative overflow-hidden my-auto">
 
-function formatCurrency(num, currency) {
-    return (currencySymbols[currency] || '') + formatNumber(num);
-}
+      <!-- Cute Chibi Tardigrade (水熊蟲 / 水形蟲) Mascot SVG Preview -->
+      <div class="mx-auto w-28 h-24 sm:w-32 sm:h-28 animate-float relative flex items-center justify-center mb-1">
+        <svg viewBox="0 0 160 125" class="w-full h-full">
+          <defs>
+            <linearGradient id="tardiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f5f0e6" />
+              <stop offset="55%" stop-color="#d6cfc2" />
+              <stop offset="100%" stop-color="#a89f91" />
+            </linearGradient>
+            <radialGradient id="amoebaGrad" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#a5f3fc"/></radialGradient>
+            <radialGradient id="snoutGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#1e293b" />
+              <stop offset="65%" stop-color="#94a3b8" />
+              <stop offset="100%" stop-color="#e2e8f0" />
+            </radialGradient>
+          </defs>
+          <!-- Back stubby legs with cute little claws -->
+          <g stroke="#8c8273" stroke-width="2.2" fill="#cbbba8">
+            <path d="M35,84 Q26,104 34,108 Q42,108 45,90 Z" />
+            <path d="M62,88 Q56,109 64,112 Q72,112 73,92 Z" />
+            <path d="M90,88 Q88,109 96,112 Q104,111 102,90 Z" />
+            <path d="M114,82 Q118,103 126,105 Q132,102 124,82 Z" />
+          </g>
+          <!-- Little white claws on legs -->
+          <g stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+            <line x1="31" y1="107" x2="28" y2="114" /><line x1="35" y1="108" x2="34" y2="116" /><line x1="39" y1="107" x2="40" y2="114" />
+            <line x1="60" y1="111" x2="58" y2="118" /><line x1="64" y1="112" x2="64" y2="119" /><line x1="68" y1="111" x2="70" y2="118" />
+            <line x1="92" y1="111" x2="90" y2="118" /><line x1="96" y1="112" x2="96" y2="119" /><line x1="100" y1="111" x2="102" y2="118" />
+            <line x1="122" y1="104" x2="123" y2="111" /><line x1="126" y1="105" x2="129" y2="112" /><line x1="129" y1="102" x2="134" y2="108" />
+          </g>
+          <!-- Chubby Segmented Tardigrade Body -->
+          <ellipse cx="42" cy="64" rx="24" ry="26" fill="url(#tardiGrad)" stroke="#8c8273" stroke-width="2.5" />
+          <ellipse cx="66" cy="62" rx="28" ry="30" fill="url(#tardiGrad)" stroke="#8c8273" stroke-width="2.5" />
+          <ellipse cx="92" cy="61" rx="29" ry="31" fill="url(#tardiGrad)" stroke="#8c8273" stroke-width="2.5" />
+          <ellipse cx="116" cy="62" rx="25" ry="26" fill="url(#tardiGrad)" stroke="#8c8273" stroke-width="2.5" />
+          <!-- Cute Chubby Eyes & Blush -->
+          <circle cx="110" cy="49" r="5.2" fill="#0f172a" />
+          <circle cx="128" cy="49" r="5.2" fill="#0f172a" />
+          <circle cx="108.5" cy="47.2" r="2" fill="#ffffff" />
+          <circle cx="126.5" cy="47.2" r="2" fill="#ffffff" />
+          <ellipse cx="103" cy="56" rx="4.5" ry="2.5" fill="#fb7185" opacity="0.75" />
+          <ellipse cx="134" cy="56" rx="4.5" ry="2.5" fill="#fb7185" opacity="0.75" />
+          <!-- Iconic Puckered Tubular Tardigrade Snout -->
+          <ellipse cx="124" cy="66" rx="11" ry="10" fill="#e5dec9" stroke="#78716c" stroke-width="2.5" />
+          <circle cx="125" cy="66" r="5.2" fill="url(#snoutGrad)" stroke="#475569" stroke-width="1.8" />
+        </svg>
+      </div>
 
-// ==================== Add Item ====================
-function addItem() {
-    const name = document.getElementById('itemName').value.trim();
-    if (!name) return showNotification('請輸入品項名稱', 'error');
+      <h1 id="modalTitle" class="text-xl sm:text-2xl font-black tracking-tight text-cyan-200">
+        微觀大作戰：Q版水形蟲闖關記
+      </h1>
+      <p id="modalSubtitle" class="text-xs sm:text-sm text-cyan-100/90 mt-1 leading-relaxed">
+        使用左下角<strong class="text-cyan-300">十字方向鍵</strong>與右下角<strong class="text-amber-200">圓形控制鍵</strong>操作！<strong class="text-emerald-300">吃 5 個小點點長大 10%</strong>、<strong class="text-emerald-300">吃 1 隻細菌長大 10%</strong>！
+      </p>
 
-    const settings = getSettings();
-    const item = {
-        name, category: document.getElementById('itemCategory').value,
-        desc: document.getElementById('itemDesc').value.trim(),
-        qty: parseFloat(document.getElementById('itemQty').value) || 0,
-        target: parseFloat(document.getElementById('itemTarget').value) || 0,
-        price: parseFloat(document.getElementById('itemPrice').value) || 0,
-        currency: document.getElementById('currencyUnit').value,
-        weight: parseFloat(document.getElementById('itemWeight').value) || 10,
-        timestamp: new Date().toISOString()
-    };
+      <!-- Power-up & Growth Rules Summary Grid -->
+      <div class="grid grid-cols-2 gap-2 my-3 text-left">
+        <div class="bg-slate-900/80 border border-emerald-400/30 rounded-xl p-2">
+          <div class="text-xs font-bold text-emerald-300">📈 成長與過關法則</div>
+          <div class="text-[10px] text-cyan-100/85 leading-snug mt-0.5">吃滿 5 個小點點 <strong class="text-white">+10%</strong>、吃 1 隻細菌 <strong class="text-white">+10%</strong>、吃糖果 <strong class="text-amber-300">+30% 並解毒</strong>！每關吃10隻＋解任務！</div>
+        </div>
+        <div class="bg-slate-900/80 border border-amber-400/40 rounded-xl p-2">
+          <div class="text-xs font-bold text-amber-300">🎁 四大戰鬥道具</div>
+          <div class="text-[10px] text-cyan-100/85 leading-snug mt-0.5">🦘<strong class="text-emerald-300">危險跳躍</strong>、🛡️<strong class="text-yellow-300">10秒無敵</strong>、⚡<strong class="text-cyan-300">5發麻痺子彈</strong>、🐙<strong class="text-pink-300">10秒觸手攻擊</strong>！</div>
+        </div>
+      </div>
 
-    const calc = calculateKPI(item, settings);
-    Object.assign(item, calc);
-    kpiData.push(item);
-    clearForm();
-    renderTable(); updateStats(); updateCharts();
-    showNotification(`✅ 已新增「${name}」`, 'success');
-}
+      <!-- Choose Tardigrade Color Skin -->
+      <div id="skinSelectorSection" class="mb-3.5">
+        <div class="text-xs font-bold text-cyan-300 mb-1.5">選擇你的Q版水形蟲（水熊蟲）配色：</div>
+        <div class="grid grid-cols-5 gap-1.5">
+          <button type="button" data-skin="tardigrade" class="skin-btn active rounded-xl py-1.5 px-1 border border-cyan-500/30 bg-slate-900/60 flex flex-col items-center gap-1 transition">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-stone-100 to-stone-400 inline-block border border-white/60"></span>
+            <span class="text-[10px] font-semibold">經典水熊</span>
+          </button>
+          <button type="button" data-skin="aqua" class="skin-btn rounded-xl py-1.5 px-1 border border-cyan-500/30 bg-slate-900/60 flex flex-col items-center gap-1 transition">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-200 to-sky-500 inline-block border border-white/60"></span>
+            <span class="text-[10px] font-semibold">晶透水藍</span>
+          </button>
+          <button type="button" data-skin="mint" class="skin-btn rounded-xl py-1.5 px-1 border border-cyan-500/30 bg-slate-900/60 flex flex-col items-center gap-1 transition">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-200 to-teal-500 inline-block border border-white/60"></span>
+            <span class="text-[10px] font-semibold">螢光嫩綠</span>
+          </button>
+          <button type="button" data-skin="peach" class="skin-btn rounded-xl py-1.5 px-1 border border-cyan-500/30 bg-slate-900/60 flex flex-col items-center gap-1 transition">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-pink-200 to-rose-500 inline-block border border-white/60"></span>
+            <span class="text-[10px] font-semibold">蜜桃粉紅</span>
+          </button>
+          <button type="button" data-skin="violet" class="skin-btn rounded-xl py-1.5 px-1 border border-cyan-500/30 bg-slate-900/60 flex flex-col items-center gap-1 transition">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-purple-200 to-indigo-500 inline-block border border-white/60"></span>
+            <span class="text-[10px] font-semibold">星雲紫晶</span>
+          </button>
+        </div>
+      </div>
 
-// ==================== Render Table ====================
-function renderTable() {
-    const tbody = document.getElementById('kpiTableBody');
-    const emptyState = document.getElementById('emptyState');
-    tbody.innerHTML = '';
-    
-    if (kpiData.length === 0) {
-        emptyState.style.display = 'block';
-        return;
-    }
-    emptyState.style.display = 'none';
+      <!-- Stats Box (Shown on Game Over / Victory) -->
+      <div id="resultStatsBox" class="hidden bg-slate-900/80 border border-cyan-400/30 rounded-2xl p-3 mb-3.5 grid grid-cols-3 gap-2">
+        <div>
+          <div class="text-[11px] text-cyan-300/80">抵達關卡 / 體型</div>
+          <div id="statFinalSize" class="text-sm sm:text-base font-black text-white">第1關 / 20 μm</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-cyan-300/80">累計吞噬對手</div>
+          <div id="statEaten" class="text-sm sm:text-base font-black text-emerald-300">0 隻</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-cyan-300/80">吃糖果 / 道具</div>
+          <div id="statCandies" class="text-sm sm:text-base font-black text-amber-300">0 顆</div>
+        </div>
+      </div>
 
-    kpiData.forEach((item, index) => {
-        const cat = categoryConfig[item.category];
-        const achColor = item.achievementRate >= 90 ? 'var(--success)' : item.achievementRate >= 70 ? 'var(--info)' : item.achievementRate >= 50 ? 'var(--warning)' : 'var(--danger)';
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${index + 1}</strong></td>
-            <td><strong>${item.name}</strong></td>
-            <td><span class="category-tag ${cat.class}">${cat.label}</span></td>
-            <td>${item.desc || '-'}</td>
-            <td>${formatNumber(item.qty)}</td>
-            <td>${formatNumber(item.target)}</td>
-            <td>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:${Math.min(item.achievementRate, 100)}%; background:${achColor}"></div></div>
-                    <span>${formatNumber(item.achievementRate)}%</span>
-                </div>
-            </td>
-            <td>${formatCurrency(item.price, item.currency)}</td>
-            <td><strong>${formatCurrency(item.totalValue, item.currency)}</strong></td>
-            <td>${item.weight}%</td>
-            <td><strong>${formatNumber(item.kpiScore)}</strong></td>
-            <td><span class="kpi-badge ${item.rating.class}">${item.rating.icon} ${item.rating.label}</span></td>
-            <td>
-                <button class="btn btn-sm btn-info" onclick="editItem(${index})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+      <!-- Primary Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+        <button id="btnStartGame" type="button" class="btn-glow w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black text-sm sm:text-base shadow-lg hover:brightness-110 active:scale-98 transition">
+          🔬 進入顯微鏡世界 (開始遊戲)
+        </button>
+        <button id="btnRetryStage" type="button" class="hidden w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-sm sm:text-base shadow-lg hover:brightness-110 active:scale-98 transition">
+          🔄 重試本關卡
+        </button>
+        <button id="btnEndlessContinue" type="button" class="hidden w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-sm sm:text-base shadow-lg hover:brightness-110 active:scale-98 transition">
+          ♾️ 繼續無盡培養皿模式
+        </button>
+      </div>
+    </div>
+  </div>
 
-// ==================== Update Stats ====================
-function updateStats() {
-    const total = kpiData.length;
-    const avgKPI = total > 0 ? kpiData.reduce((s, i) => s + i.kpiScore, 0) / total : 0;
-    const totalVal = kpiData.reduce((s, i) => s + i.totalValue, 0);
-    const best = total > 0 ? kpiData.reduce((b, i) => i.kpiScore > b.kpiScore ? i : b, kpiData[0]) : null;
-    const avgAch = total > 0 ? kpiData.reduce((s, i) => s + i.achievementRate, 0) / total : 0;
+  <script>
+    (function () {
+      'use strict';
 
-    document.getElementById('totalItems').textContent = total;
-    document.getElementById('avgKPI').textContent = formatNumber(avgKPI);
-    document.getElementById('totalValue').textContent = formatNumber(totalVal);
-    document.getElementById('bestItem').textContent = best ? best.name : '-';
-    document.getElementById('achievementRate').textContent = formatNumber(avgAch) + '%';
-}
-
-// ==================== Charts ====================
-function updateCharts() {
-    const showCharts = document.getElementById('toggleCharts')?.classList.contains('active') ?? true;
-    if (!showCharts || kpiData.length === 0) {
-        Object.values(charts).forEach(c => c.destroy());
-        charts = {};
-        return;
-    }
-
-    const labels = kpiData.map(i => i.name);
-    const kpiScores = kpiData.map(i => i.kpiScore);
-    const achievements = kpiData.map(i => i.achievementRate);
-    const values = kpiData.map(i => i.totalValue);
-    const ratings = { '優秀': 0, '良好': 0, '普通': 0, '待加強': 0 };
-    kpiData.forEach(i => ratings[i.rating.label]++);
-
-    Object.values(charts).forEach(c => c.destroy());
-
-    charts.bar = new Chart(document.getElementById('barChart'), {
-        type: 'bar', data: { labels, datasets: [{ label: 'KPI 分數', data: kpiScores, backgroundColor: kpiScores.map(s => s >= 8 ? '#10b981' : s >= 6 ? '#3b82f6' : s >= 4 ? '#f59e0b' : '#ef4444'), borderRadius: 8 }] },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
-
-    charts.pie = new Chart(document.getElementById('pieChart'), {
-        type: 'pie', data: { labels: Object.keys(ratings), datasets: [{ data: Object.values(ratings), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'] }] },
-        options: { responsive: true }
-    });
-
-    charts.doughnut = new Chart(document.getElementById('doughnutChart'), {
-        type: 'doughnut', data: { labels, datasets: [{ data: values, backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'] }] },
-        options: { responsive: true }
-    });
-
-    charts.radar = new Chart(document.getElementById('radarChart'), {
-        type: 'radar', data: { labels, datasets: [{ label: '達成率 (%)', data: achievements, backgroundColor: 'rgba(79, 70, 229, 0.2)', borderColor: '#4f46e5', pointBackgroundColor: '#4f46e5' }] },
-        options: { responsive: true, scales: { r: { beginAtZero: true, max: 100 } } }
-    });
-}
-
-// ==================== Edit / Delete ====================
-function editItem(index) {
-    const item = kpiData[index];
-    document.getElementById('editIndex').value = index;
-    document.getElementById('editName').value = item.name;
-    document.getElementById('editCategory').value = item.category;
-    document.getElementById('editDesc').value = item.desc;
-    document.getElementById('editQty').value = item.qty;
-    document.getElementById('editTarget').value = item.target;
-    document.getElementById('editPrice').value = item.price;
-    document.getElementById('editCurrency').value = item.currency;
-    document.getElementById('editWeight').value = item.weight;
-    document.getElementById('editModal').classList.add('active');
-}
-
-function saveEdit() {
-    const index = parseInt(document.getElementById('editIndex').value);
-    const settings = getSettings();
-    kpiData[index] = {
-        ...kpiData[index],
-        name: document.getElementById('editName').value,
-        category: document.getElementById('editCategory').value,
-        desc: document.getElementById('editDesc').value,
-        qty: parseFloat(document.getElementById('editQty').value) || 0,
-        target: parseFloat(document.getElementById('editTarget').value) || 0,
-        price: parseFloat(document.getElementById('editPrice').value) || 0,
-        currency: document.getElementById('editCurrency').value,
-        weight: parseFloat(document.getElementById('editWeight').value) || 10
-    };
-    Object.assign(kpiData[index], calculateKPI(kpiData[index], settings));
-    closeEditModal(); renderTable(); updateStats(); updateCharts();
-    showNotification('✅ 已更新項目', 'success');
-}
-
-function deleteItem(index) {
-    if (confirm(`確定要刪除「${kpiData[index].name}」嗎？`)) {
-        kpiData.splice(index, 1); renderTable(); updateStats(); updateCharts();
-        showNotification('🗑️ 已刪除項目', 'info');
-    }
-}
-
-function clearAll() {
-    if (kpiData.length === 0) return;
-    if (confirm('確定要清除所有項目嗎？此操作無法復原。')) {
-        kpiData = []; renderTable(); updateStats(); updateCharts();
-        showNotification('🗑️ 已清除所有項目', 'info');
-    }
-}
-
-// ==================== Form Helpers ====================
-function clearForm() {
-    ['itemName', 'itemDesc', 'itemQty', 'itemTarget', 'itemPrice', 'customScore', 'baseValue'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('itemWeight').value = 10;
-    document.getElementById('weightDisplay').textContent = '10%';
-}
-
-function toggleAdvanced() {
-    const el = document.getElementById('advancedSettings');
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
-function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
-function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
-
-// ==================== Sample Data ====================
-function addSampleData() {
-    const samples = [
-        { name: 'A產品銷售', category: 'product', desc: '主力產品A', qty: 1200, target: 1500, price: 350, currency: 'TWD', weight: 20 },
-        { name: 'B產品銷售', category: 'product', desc: '新上市產品B', qty: 800, target: 1000, price: 520, currency: 'TWD', weight: 15 },
-        { name: 'Q1業績目標', category: 'performance', desc: '第一季業績', qty: 2500000, target: 3000000, price: 1, currency: 'TWD', weight: 25 },
-        { name: 'Q2業績目標', category: 'performance', desc: '第二季業績', qty: 3200000, target: 3000000, price: 1, currency: 'TWD', weight: 25 },
-        { name: 'USD持有', category: 'currency', desc: '美元外幣存款', qty: 50000, target: 60000, price: 31.5, currency: 'USD', weight: 10 },
-        { name: '台積電股票', category: 'securities', desc: '2330.TW 持股', qty: 500, target: 1000, price: 890, currency: 'TWD', weight: 15 }
-    ];
-    const settings = getSettings();
-    samples.forEach(s => {
-        const calc = calculateKPI(s, settings);
-        kpiData.push({ ...s, ...calc, timestamp: new Date().toISOString() });
-    });
-    renderTable(); updateStats(); updateCharts();
-    showNotification('📋 已載入 6 筆範例資料', 'success');
-}
-
-function sortTable(field) {
-    kpiData.sort((a, b) => b[field] - a[field]);
-    renderTable();
-}
-
-function showNotification(msg, type = 'info') {
-    const div = document.createElement('div');
-    div.className = `notification ${type}`;
-    div.textContent = msg;
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
-}
-
-async function exportPDF() {
-    if (kpiData.length === 0) {
-        return showNotification('請先載入範例資料', 'error');
-    }
-
-    showNotification('正在產生 PDF...', 'info');
-
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const imgWidth = pageWidth - 20;
-
-        // ====================== 第 1 頁：表格 ======================
-        let container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '-99999px';
-        container.style.width = '1100px';
-        container.style.background = '#ffffff';
-        container.style.padding = '40px 50px';
-        container.style.fontFamily = "'Microsoft JhengHei', 'PingFang TC', sans-serif";
-        document.body.appendChild(container);
-
-        container.innerHTML = `
-            <h1 style="color:#4f46e5; text-align:center; font-size:30px; margin-bottom:15px;">KPI 智能計算報告</h1>
-            <p style="text-align:center; color:#64748b; margin-bottom:30px;">
-                生成日期：${new Date().toLocaleDateString('zh-TW')} ${new Date().toLocaleTimeString('zh-TW')}
-            </p>
-            <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:35px; font-size:17px;">
-                <div><strong>總項目數：</strong>${kpiData.length}</div>
-                <div><strong>平均 KPI：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.kpiScore,0)/kpiData.length || 0)}</div>
-                <div><strong>總產值：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.totalValue,0))}</div>
-            </div>
-        `;
-
-        let tableHTML = `<table style="width:100%; border-collapse:collapse; font-size:14.5px;">
-            <thead><tr style="background:#4f46e5; color:white;">
-                <th style="padding:12px; border:1px solid #ddd; text-align:center;">#</th>
-                <th style="padding:12px; border:1px solid #ddd;">品項名稱</th>
-                <th style="padding:12px; border:1px solid #ddd;">類別</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:right;">數量</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:right;">目標</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:right;">達成率</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:right;">總產值</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:center;">權重</th>
-                <th style="padding:12px; border:1px solid #ddd; text-align:right;">KPI</th>
-                <th style="padding:12px; border:1px solid #ddd;">評級</th>
-            </tr></thead><tbody>`;
-
-        kpiData.forEach((item, i) => {
-            const cat = categoryConfig[item.category];
-            tableHTML += `<tr>
-                <td style="padding:10px; border:1px solid #ddd; text-align:center;">${i+1}</td>
-                <td style="padding:10px; border:1px solid #ddd;">${item.name}</td>
-                <td style="padding:10px; border:1px solid #ddd;">${cat.label}</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.qty)}</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.target)}</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.achievementRate)}%</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatCurrency(item.totalValue, item.currency)}</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:center;">${item.weight}%</td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">${formatNumber(item.kpiScore)}</td>
-                <td style="padding:10px; border:1px solid #ddd;">${item.rating.label}</td>
-            </tr>`;
-        });
-        tableHTML += `</tbody></table>`;
-        container.innerHTML += tableHTML;
-
-        const canvasTable = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-        doc.addImage(canvasTable.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 10, imgWidth, Math.min((canvasTable.height * imgWidth) / canvasTable.width, pageHeight - 20));
-        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
-        const chartTitles = ['各項目 KPI 比較', '評級分佈', '產值分佈', '達成率趨勢'];
-
-        for (let i = 0; i < chartIds.length; i++) {
-            container.innerHTML = `<h1 style="color:#4f46e5; text-align:center; font-size:28px; margin:40px 0 30px;">${chartTitles[i]}</h1>`;
-
-            const canvas = document.getElementById(chartIds[i]);
-            if (!canvas) continue;
-
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png', 0.96);
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-            img.style.display = 'block';
-            img.style.margin = '0 auto';
-            container.appendChild(img);
-
-            await new Promise(r => setTimeout(r, 300)); // 確保圖片載入
-
-            const canvasChart = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-            doc.addPage();
-            const imgH = (canvasChart.height * imgWidth) / canvasChart.width;
-            doc.addImage(canvasChart.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 15, imgWidth, Math.min(imgH, pageHeight - 30));
+      // =========================================================================
+      // 1. HARDWARE-CLOCK WEB AUDIO ENGINE (No Ducking, Zero Jitter, 15s Loop)
+      // =========================================================================
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.bgmBus = null;
+          this.sfxBus = null;
+          this.muted = false;
+          this.bgmPlaying = false;
+          this.bgmTimer = null;
+          this.stepIndex = 0;
+          this.nextNoteTime = 0;
         }
 
-        doc.save(`KPI報告_${new Date().toISOString().slice(0,10)}.pdf`);
-        showNotification('📄 PDF 已匯出', 'success');
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              this.ctx = new AudioCtx();
 
-    } catch (err) {
-        console.error(err);
-        showNotification('PDF 產生失敗，請用 Chrome 重試', 'error');
-    } finally {
-        const containers = document.querySelectorAll('div[style*="left: -99999px"]');
-        containers.forEach(c => c.remove());
-    }
-}
+              // Independent BGM and SFX gain buses (SFX never ducks/compresses BGM!)
+              this.bgmBus = this.ctx.createGain();
+              this.bgmBus.gain.setValueAtTime(0.75, this.ctx.currentTime);
+              this.bgmBus.connect(this.ctx.destination);
 
-// ==================== Export PDF ====================
-async function exportPDF() {
-    if (kpiData.length === 0) {
-        return showNotification('請先載入範例資料', 'error');
-    }
+              this.sfxBus = this.ctx.createGain();
+              this.sfxBus.gain.setValueAtTime(0.85, this.ctx.currentTime);
+              this.sfxBus.connect(this.ctx.destination);
+            }
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
 
-    showNotification('正在產生滿版 PDF...', 'info');
+        toggleMute() {
+          this.init();
+          this.muted = !this.muted;
+          if (this.muted) {
+            this.stopBGM();
+          } else if (gameState === 'PLAYING') {
+            this.startBGM(false);
+          }
+          return !this.muted;
+        }
 
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
+        // Hardware-clock lookahead scheduler: 48 beats * 0.3125s = 15.000s exact loop!
+        startBGM(resetFromBeginning = false) {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          if (resetFromBeginning) {
+            this.stopBGM();
+            this.stepIndex = 0;
+          }
+          if (this.bgmPlaying) return;
+          this.bgmPlaying = true;
 
-        const margin = 10;
-        const imgWidth = pageWidth - (margin * 2);
+          const now = this.ctx.currentTime;
+          this.bgmBus.gain.cancelScheduledValues(now);
+          this.bgmBus.gain.setValueAtTime(0.02, now);
+          this.bgmBus.gain.linearRampToValueAtTime(0.75, now + 0.9);
 
-        // ====================== 第 1 頁：表格 ======================
-        let container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '-99999px';
-        container.style.width = '1200px';
-        container.style.background = '#ffffff';
-        container.style.padding = '40px 50px';
-        container.style.fontFamily = "'Microsoft JhengHei', 'PingFang TC', sans-serif";
-        document.body.appendChild(container);
+          this.nextNoteTime = now + 0.08;
 
-        container.innerHTML = `
-            <h1 style="color:#4f46e5; text-align:center; font-size:32px; margin-bottom:15px;">KPI 智能計算報告</h1>
-            <p style="text-align:center; color:#64748b; margin-bottom:30px; font-size:18px;">
-                生成日期：${new Date().toLocaleDateString('zh-TW')} ${new Date().toLocaleTimeString('zh-TW')}
-            </p>
-            <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:25px; border-radius:12px; margin-bottom:35px; font-size:20px;">
-                <div><strong>總項目數：</strong>${kpiData.length}</div>
-                <div><strong>平均 KPI：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.kpiScore,0)/kpiData.length || 0)}</div>
-                <div><strong>總產值：</strong>${formatNumber(kpiData.reduce((s,i)=>s+i.totalValue,0))}</div>
-            </div>
-        `;
+          // Pure C Major Pentatonic notes (warm, singable, zero dissonance)
+          const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880.00;
+          const G4 = 392.00, A4 = 440.00;
+          const C3 = 130.81, F3 = 174.61, G3 = 196.00, A3 = 220.00, D4 = 293.66, E4 = 329.63, C4 = 261.63;
 
-        let tableHTML = `<table style="width:100%; border-collapse:collapse; font-size:16px;">
-            <thead><tr style="background:#4f46e5; color:white;">
-                <th style="padding:15px; border:1px solid #ddd; text-align:center;">#</th>
-                <th style="padding:15px; border:1px solid #ddd;">品項名稱</th>
-                <th style="padding:15px; border:1px solid #ddd;">類別</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:right;">數量</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:right;">目標</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:right;">達成率</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:right;">總產值</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:center;">權重</th>
-                <th style="padding:15px; border:1px solid #ddd; text-align:right;">KPI</th>
-                <th style="padding:15px; border:1px solid #ddd;">評級</th>
-            </tr></thead><tbody>`;
+          // 48 steps * 0.3125s = 15.0 seconds per loop
+          const melody = [
+            // Section 1 (0.00s - 3.75s): Gentle strolling theme
+            C5, D5, E5, 0,   C5, D5, E5, 0,   G5, E5, D5, C5,
+            // Section 2 (3.75s - 7.50s): Playful rising answer
+            D5, E5, G5, 0,   E5, G5, A5, G5,  E5, D5, E5, 0,
+            // Section 3 (7.50s - 11.25s): Warm chorus
+            A5, G5, E5, 0,   G5, E5, D5, 0,   E5, G5, E5, D5,
+            // Section 4 (11.25s - 15.00s): Peaceful turnaround back to C5
+            C5, D5, E5, G5,  E5, D5, C5, 0,   G4, A4, C5, 0
+          ];
 
-        kpiData.forEach((item, i) => {
-            const cat = categoryConfig[item.category];
-            tableHTML += `<tr>
-                <td style="padding:12px; border:1px solid #ddd; text-align:center;">${i+1}</td>
-                <td style="padding:12px; border:1px solid #ddd;"><strong>${item.name}</strong></td>
-                <td style="padding:12px; border:1px solid #ddd;">${cat.label}</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.qty)}</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.target)}</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.achievementRate)}%</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatCurrency(item.totalValue, item.currency)}</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:center;">${item.weight}%</td>
-                <td style="padding:12px; border:1px solid #ddd; text-align:right;">${formatNumber(item.kpiScore)}</td>
-                <td style="padding:12px; border:1px solid #ddd; vertical-align:middle;">
-                    <span style="font-size:32px; vertical-align:middle; line-height:1;">${item.rating.icon}</span>
-                    <span style="vertical-align:middle;">${item.rating.label}</span>
-                </td>
-            </tr>`;
-        });
-        tableHTML += `</tbody></table>`;
-        container.innerHTML += tableHTML;
+          const bass = [
+            C3, 0, G3, 0,    C3, 0, G3, 0,    F3, 0, G3, 0,
+            G3, 0, D4, 0,    A3, 0, E4, 0,    G3, 0, D4, 0,
+            F3, 0, C4, 0,    G3, 0, D4, 0,    A3, 0, G3, 0,
+            F3, 0, G3, 0,    C3, 0, G3, 0,    C3, 0, G3, 0
+          ];
 
-        const canvasTable = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-        doc.addImage(canvasTable.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgWidth, (canvasTable.height * imgWidth) / canvasTable.width);
+          const beatDur = 0.3125; // 312.5ms per beat -> 48 beats = 15.0s
 
-        // ====================== 第 2 頁以後：優化滿版圖表 ======================
-        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
-        const chartTitles = ['各項目 KPI 比較', '評級分佈', '產值分佈', '達成率趨勢'];
+          const scheduleNote = (stepIdx, time) => {
+            const idx = stepIdx % melody.length;
+            const note = melody[idx];
+            const bassNote = bass[idx];
 
-        for (let i = 0; i < chartIds.length; i++) {
-            const canvas = document.getElementById(chartIds[i]);
-            if (!canvas) continue;
+            if (note > 0) {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(note, time);
 
-            // 針對不同圖表調整容器樣式，防止圓餅圖等過高被切掉
-            container.innerHTML = `
-                <div style="width:100%; text-align:center; background:#ffffff;">
-                    <h1 style="color:#4f46e5; font-size:36px; margin:0; padding:30px 0;">${chartTitles[i]}</h1>
-                    <div id="chart-space" style="width:100%; display:flex; justify-content:center; align-items:center; padding-bottom:40px;"></div>
-                </div>
-            `;
+              // Equal-loudness scaling so every pitch has identical perceived volume
+              const loudComp = Math.pow(523.25 / note, 0.38);
+              const peak = 0.095 * loudComp;
 
-            const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png', 1.0);
+              gain.gain.setValueAtTime(0.0001, time);
+              gain.gain.linearRampToValueAtTime(peak, time + 0.025);
+              gain.gain.linearRampToValueAtTime(peak * 0.45, time + 0.16);
+              gain.gain.linearRampToValueAtTime(0.0001, time + 0.28);
 
-            // 關鍵：寬度撐滿，但確保圓餅圖等不因高度跑版
-            img.style.width = '1100px';
-            img.style.height = 'auto';
-            container.querySelector('#chart-space').appendChild(img);
-
-            await new Promise(r => setTimeout(r, 500));
-
-            const canvasChart = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-
-            doc.addPage();
-
-            let renderedImgHeight = (canvasChart.height * imgWidth) / canvasChart.width;
-
-            // 如果計算出的高度超過頁面高度，強制縮放以適應頁面
-            let finalWidth = imgWidth;
-            if (renderedImgHeight > (pageHeight - 20)) {
-                renderedImgHeight = pageHeight - 25;
-                finalWidth = (canvasChart.width * renderedImgHeight) / canvasChart.height;
+              osc.connect(gain);
+              gain.connect(this.bgmBus);
+              osc.start(time);
+              osc.stop(time + 0.29);
             }
 
-            // 計算置中位置
-            const xPos = (pageWidth - finalWidth) / 2;
-            const yPos = (pageHeight - renderedImgHeight) / 2;
+            if (bassNote > 0) {
+              const bOsc = this.ctx.createOscillator();
+              const bGain = this.ctx.createGain();
+              bOsc.type = 'sine';
+              bOsc.frequency.setValueAtTime(bassNote, time);
 
-            doc.addImage(
-                canvasChart.toDataURL('image/jpeg', 0.95),
-                'JPEG',
-                xPos,
-                yPos,
-                finalWidth,
-                renderedImgHeight
-            );
+              bGain.gain.setValueAtTime(0.0001, time);
+              bGain.gain.linearRampToValueAtTime(0.085, time + 0.025);
+              bGain.gain.linearRampToValueAtTime(0.0001, time + 0.27);
+
+              bOsc.connect(bGain);
+              bGain.connect(this.bgmBus);
+              bOsc.start(time);
+              bOsc.stop(time + 0.28);
+            }
+          };
+
+          const scheduler = () => {
+            if (!this.bgmPlaying || this.muted || !this.ctx) return;
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+
+            // If tab was backgrounded, resync nextNoteTime cleanly without bursting notes
+            if (this.nextNoteTime < this.ctx.currentTime - 0.2) {
+              this.nextNoteTime = this.ctx.currentTime + 0.05;
+            }
+
+            while (this.nextNoteTime < this.ctx.currentTime + 0.12) {
+              scheduleNote(this.stepIndex, this.nextNoteTime);
+              this.nextNoteTime += beatDur;
+              this.stepIndex++;
+            }
+
+            this.bgmTimer = setTimeout(scheduler, 40);
+          };
+
+          scheduler();
         }
 
-        doc.save(`KPI報告_${new Date().toISOString().slice(0,10)}.pdf`);
-        showNotification('📄 PDF 圖示優化完成', 'success');
-
-    } catch (err) {
-        console.error(err);
-        showNotification('PDF 產生失敗', 'error');
-    } finally {
-        const containers = document.querySelectorAll('div[style*="left: -99999px"]');
-        containers.forEach(c => c.remove());
-    }
-}
-
-// ==================== Export PPT ====================
-async function exportPPT() {
-    if (kpiData.length === 0) {
-        return showNotification('請先載入範例資料', 'error');
-    }
-
-    showNotification('正在產生 PPT...', 'info');
-
-    await new Promise(r => setTimeout(r, 1000));
-
-    try {
-        const pptx = new PptxGenJS();
-        pptx.defineLayout({ name: 'CUSTOM', width: 13.33, height: 7.5 });
-        pptx.layout = 'CUSTOM';
-
-        const primary = '4F46E5';
-
-        // 標題頁
-        let s1 = pptx.addSlide();
-        s1.background = { fill: primary };
-        s1.addText('📊 KPI 智能計算報告', {
-            x: 1, y: 2.5, w: 11.33, h: 1.5,
-            fontSize: 36, color: 'FFFFFF', bold: true, align: 'center'
-        });
-
-        // 表格頁 - 強力置中
-        let s2 = pptx.addSlide();
-        s2.addText('📋 KPI 項目明細', {
-            x: 0.5, y: 0.4, w: 12, h: 0.8,
-            fontSize: 26, color: primary, bold: true, align: 'center'
-        });
-
-        const tableRows = kpiData.map((item, i) => [
-            (i+1).toString(),
-            item.name.length > 18 ? item.name.substring(0,18)+'..' : item.name,
-            categoryConfig[item.category].label,
-            formatNumber(item.qty),
-            formatNumber(item.target),
-            formatNumber(item.achievementRate) + '%',
-            formatCurrency(item.totalValue, item.currency),
-            item.weight + '%',
-            formatNumber(item.kpiScore),
-            item.rating.label
-        ]);
-
-        s2.addTable([['#','品項','類別','數量','目標','達成率','總產值','權重','KPI','評級'], ...tableRows], {
-            x: 1.0,           // 更靠中間
-            y: 1.4,
-            w: 11.3,          // 再縮小總寬度
-            colW: [0.55, 2.0, 1.5, 1.0, 1.0, 1.2, 1.55, 0.8, 0.95, 1.35],
-            fontSize: 9.0,
-            color: '1E293B',
-            align: 'center',
-            border: { pt: 1, color: 'E2E8F0' },
-            rowStripe: { fill: 'F8FAFC' },
-            autoPage: true
-        });
-
-        // 圖表頁
-        const chartIds = ['barChart', 'pieChart', 'doughnutChart', 'radarChart'];
-        const titles = ['📊 各項目 KPI 比較', '🎯 評級分佈', '💰 產值分佈', '📈 達成率趨勢'];
-
-        for (let i = 0; i < chartIds.length; i++) {
-            const canvas = document.getElementById(chartIds[i]);
-            if (!canvas) continue;
-
-            const dataUrl = canvas.toDataURL('image/png', 0.95);
-
-            let slide = pptx.addSlide();
-            slide.addText(titles[i], {
-                x: 0.5, y: 0.4, w: 12, h: 0.9,
-                fontSize: 26, color: primary, bold: true, align: 'center'
-            });
-
-            slide.addImage({
-                data: dataUrl,
-                x: 0.8,
-                y: 1.6,
-                w: 11.7,
-                h: 5.1,
-                sizing: { type: 'contain' }
-            });
+        stopBGM() {
+          this.bgmPlaying = false;
+          if (this.bgmTimer) {
+            clearTimeout(this.bgmTimer);
+            this.bgmTimer = null;
+          }
         }
 
-        pptx.writeFile(`KPI報告_${new Date().toISOString().slice(0,10)}.pptx`);
-        showNotification('📊 PPT 已成功匯出', 'success');
+        playBuziEat(isBig = false) {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
 
-    } catch (err) {
-        console.error(err);
-        showNotification('PPT 產生失敗', 'error');
-    }
-}
+          const bursts = isBig ? [0, 0.11, 0.22] : [0, 0.10];
+          bursts.forEach((offset, idx) => {
+            const t = now + offset;
+            const osc = this.ctx.createOscillator();
+            const mod = this.ctx.createOscillator();
+            const modGain = this.ctx.createGain();
+            const gain = this.ctx.createGain();
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderTable();
-    updateStats();
-    updateCharts();
-});
-</script>
+            osc.type = 'sawtooth';
+            const baseFreq = idx % 2 === 0 ? 230 : 340;
+            osc.frequency.setValueAtTime(baseFreq, t);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 2.2, t + 0.085);
+
+            mod.type = 'sine';
+            mod.frequency.setValueAtTime(65, t);
+            modGain.gain.setValueAtTime(100, t);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(600, t);
+            filter.frequency.exponentialRampToValueAtTime(1550, t + 0.08);
+            filter.Q.setValueAtTime(3.8, t);
+
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.linearRampToValueAtTime(0.15, t + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.002, t + 0.095);
+
+            mod.connect(modGain);
+            modGain.connect(osc.frequency);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.sfxBus);
+
+            osc.start(t);
+            mod.start(t);
+            osc.stop(t + 0.1);
+            mod.stop(t + 0.1);
+          });
+        }
+
+        playJump() {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.exponentialRampToValueAtTime(680, now + 0.22);
+          gain.gain.setValueAtTime(0.13, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+
+        playBulletZap() {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(240, now + 0.15);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.17);
+        }
+
+        playTentacleSlash() {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(480, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.14);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.16);
+        }
+
+        playCandyPowerup(isPlayer = true) {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          if (isPlayer) {
+            this.playBuziEat(true);
+          }
+          const now = this.ctx.currentTime;
+          const notes = isPlayer ? [523.25, 659.25, 783.99, 1046.50] : [392.00, 349.23, 311.13];
+          notes.forEach((freq, i) => {
+            const t = now + i * 0.065;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.linearRampToValueAtTime(isPlayer ? 0.10 : 0.06, t + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+            osc.connect(gain);
+            gain.connect(this.sfxBus);
+            osc.start(t);
+            osc.stop(t + 0.19);
+          });
+        }
+
+        playParasiteAlarm() {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(640, now);
+          osc.frequency.setValueAtTime(480, now + 0.08);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        }
+
+        playHazardBoom(isLaser = false) {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(isLaser ? 720 : 180, now);
+          osc.frequency.exponentialRampToValueAtTime(isLaser ? 200 : 45, now + 0.26);
+          gain.gain.setValueAtTime(0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.29);
+        }
+
+        playDash() {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.18);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+          osc.connect(gain);
+          gain.connect(this.sfxBus);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+
+        playEndFanfare(victory) {
+          this.init();
+          if (this.muted || !this.ctx) return;
+          const now = this.ctx.currentTime;
+          const seq = victory
+            ? [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]
+            : [440, 392, 349.23, 293.66];
+          seq.forEach((f, idx) => {
+            const t = now + idx * 0.12;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, t);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+            osc.connect(gain);
+            gain.connect(this.sfxBus);
+            osc.start(t);
+            osc.stop(t + 0.28);
+          });
+        }
+      }
+
+      const sound = new SoundEngine();
+
+      // =========================================================================
+      // 2. GAME CONSTANTS, SKINS, STAGES, ITEMS & MICROBE SPECIES
+      // =========================================================================
+      const WORLD_RADIUS = 1550;
+      const EAT_TARGET_PER_STAGE = 10; // Eat 10 opponents per stage
+      const DOTS_FOR_GROWTH = 5;       // Eat 5 small dots -> +10% size!
+      const PARASITE_MAX_TIME = 10.0;  // 10s to eat candy when infected
+
+      const SKINS = {
+        tardigrade: {
+          core: '#d6cfc2',
+          light: '#f5f0e6',
+          deep: '#9c9283',
+          fold: '#78716c',
+          snout: '#e7e0d3',
+          claw: '#ffffff'
+        },
+        aqua: {
+          core: '#38bdf8',
+          light: '#e0f2fe',
+          deep: '#0284c7',
+          fold: '#0369a1',
+          snout: '#bae6fd',
+          claw: '#ffffff'
+        },
+        mint: {
+          core: '#34d399',
+          light: '#d1fae5',
+          deep: '#059669',
+          fold: '#047857',
+          snout: '#a7f3d0',
+          claw: '#ffffff'
+        },
+        peach: {
+          core: '#fb7185',
+          light: '#ffe4e6',
+          deep: '#e11d48',
+          fold: '#be123c',
+          snout: '#fecdd3',
+          claw: '#ffffff'
+        },
+        violet: {
+          core: '#a78bfa',
+          light: '#ede9fe',
+          deep: '#7c3aed',
+          fold: '#5b21b6',
+          snout: '#ddd6fe',
+          claw: '#ffffff'
+        }
+      };
+
+      const STAGES = [
+        {
+          stage: 1,
+          name: '第 1 關：漩渦試煉',
+          missionType: 'circle_run',
+          missionDesc: '🌀 任務：沿著中央發光圓圈跑完一圈',
+          missionGoal: 8,
+          hasRing: true,
+          meteorInterval: 0,
+          laserInterval: 0,
+          wallCount: 4,
+          parasiteRatio: 0.25
+        },
+        {
+          stage: 2,
+          name: '第 2 關：隕石風暴',
+          missionType: 'dodge_meteors',
+          missionDesc: '☄️ 任務：閃避不同位置的隕石墜落 (5波)',
+          missionGoal: 5,
+          hasRing: false,
+          meteorInterval: 2.5,
+          laserInterval: 0,
+          wallCount: 5,
+          parasiteRatio: 0.28
+        },
+        {
+          stage: 3,
+          name: '第 3 關：高能激光',
+          missionType: 'dodge_lasers',
+          missionDesc: '⚡ 任務：閃避突發激光照射區域 (5次)',
+          missionGoal: 5,
+          hasRing: false,
+          meteorInterval: 3.8,
+          laserInterval: 3.1,
+          wallCount: 6,
+          parasiteRatio: 0.30
+        },
+        {
+          stage: 4,
+          name: '第 4 關：細胞迷宮壁',
+          missionType: 'maze_ring',
+          missionDesc: '🧱 任務：突破阻擋牆壁並繞行圓圈一圈',
+          missionGoal: 8,
+          hasRing: true,
+          meteorInterval: 3.6,
+          laserInterval: 3.6,
+          wallCount: 9,
+          parasiteRatio: 0.32
+        },
+        {
+          stage: 5,
+          name: '第 5 關：終極寄生試煉',
+          missionType: 'digest_parasite',
+          missionDesc: '☣️ 任務：吞噬寄生菌並吃糖果成功消化 (2次)',
+          missionGoal: 2,
+          hasRing: true,
+          meteorInterval: 2.8,
+          laserInterval: 3.0,
+          wallCount: 8,
+          parasiteRatio: 0.45
+        }
+      ];
+
+      const BACTERIA_SPECIES = [
+        {
+          id: 'coccus',
+          name: '星芒刺刺球',
+          shape: 'star_coccus',
+          color: '#4ade80',
+          border: '#bbf7d0',
+          nucleus: '#15803d',
+          speedMult: 1.02,
+          aggressiveness: 0.45,
+          isParasite: false
+        },
+        {
+          id: 'bacillus',
+          name: '雙節毛毛桿菌',
+          shape: 'segmented_rod',
+          color: '#f472b6',
+          border: '#fbcfe8',
+          nucleus: '#be185d',
+          speedMult: 1.0,
+          aggressiveness: 0.65,
+          isParasite: false
+        },
+        {
+          id: 'spirillum',
+          name: 'Q版彈簧螺旋菌',
+          shape: 'spiral_snake',
+          color: '#fb923c',
+          border: '#fed7aa',
+          nucleus: '#c2410c',
+          speedMult: 1.10,
+          aggressiveness: 0.78,
+          isParasite: false
+        },
+        {
+          id: 'diplococcus',
+          name: '☣️寄生毒孢菌',
+          shape: 'parasite_spore',
+          color: '#a855f7',
+          border: '#bef264',
+          nucleus: '#4d7c0f',
+          speedMult: 1.0,
+          aggressiveness: 0.58,
+          isParasite: true
+        },
+        {
+          id: 'phage',
+          name: '噬菌體機甲王',
+          shape: 'bacteriophage',
+          color: '#f43f5e',
+          border: '#fecdd3',
+          nucleus: '#881337',
+          speedMult: 0.90,
+          aggressiveness: 0.88,
+          isParasite: false
+        }
+      ];
+
+      const CANDY_TYPES = [
+        { name: '彩虹星星糖', kind: 'konpeito', primary: '#fde047', secondary: '#f472b6' },
+        { name: '漩渦棒棒糖', kind: 'swirl', primary: '#fb7185', secondary: '#fef08a' },
+        { name: '解毒膠囊糖', kind: 'capsule', primary: '#38bdf8', secondary: '#a3e635' }
+      ];
+
+      const POWERUP_TYPES = [
+        { id: 'jump', name: '🦘 危險跳躍道具', icon: '🦘', color: '#34d399', border: '#a7f3d0', desc: '可跳躍閃避危險！' },
+        { id: 'shield', name: '🛡️ 10秒無敵護盾', icon: '🛡️', color: '#fbbf24', border: '#fef08a', desc: '獲得10秒無敵狀態！' },
+        { id: 'bullets', name: '⚡ 5發麻痺子彈', icon: '⚡', color: '#38bdf8', border: '#bae6fd', desc: '裝填5發麻痺子彈！' },
+        { id: 'tentacles', name: '🐙 10秒狂暴觸手', icon: '🐙', color: '#e879f9', border: '#f5d0fe', desc: '10秒內長出觸手攻擊敵人！' }
+      ];
+
+      // =========================================================================
+      // 3. STATE & DOM REFERENCES
+      // =========================================================================
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      const radarCanvas = document.getElementById('radarCanvas');
+      const radarCtx = radarCanvas.getContext('2d');
+
+      const hudZoom = document.getElementById('hudZoom');
+      const hudStageBadge = document.getElementById('hudStageBadge');
+      const hudSize = document.getElementById('hudSize');
+      const hudProgress = document.getElementById('hudProgress');
+      const hudDotCount = document.getElementById('hudDotCount');
+      const hudDotBar = document.getElementById('hudDotBar');
+      const hudAliveCount = document.getElementById('hudAliveCount');
+      const hudEatCount = document.getElementById('hudEatCount');
+      const hudEatTarget = document.getElementById('hudEatTarget');
+      const hudMissionTitle = document.getElementById('hudMissionTitle');
+      const hudMissionStatus = document.getElementById('hudMissionStatus');
+      const hudMissionBar = document.getElementById('hudMissionBar');
+
+      const activeBuffsBox = document.getElementById('activeBuffsBox');
+      const invincibilityBuffRow = document.getElementById('invincibilityBuffRow');
+      const invincibilityTimerText = document.getElementById('invincibilityTimerText');
+      const tentacleBuffRow = document.getElementById('tentacleBuffRow');
+      const tentacleTimerText = document.getElementById('tentacleTimerText');
+
+      const parasiteAlertBox = document.getElementById('parasiteAlertBox');
+      const parasiteTimerText = document.getElementById('parasiteTimerText');
+      const parasiteTimerBar = document.getElementById('parasiteTimerBar');
+
+      const hudEdibleCount = document.getElementById('hudEdibleCount');
+      const hudDangerCount = document.getElementById('hudDangerCount');
+      const hudCandyCount = document.getElementById('hudCandyCount');
+      const eventToast = document.getElementById('eventToast');
+
+      const btnAudioToggle = document.getElementById('btnAudioToggle');
+      const audioIcon = document.getElementById('audioIcon');
+      const audioLabel = document.getElementById('audioLabel');
+      const btnPause = document.getElementById('btnPause');
+      const pauseIcon = document.getElementById('pauseIcon');
+
+      const dpadContainer = document.getElementById('dpadContainer');
+      const dpadUp = document.getElementById('dpadUp');
+      const dpadDown = document.getElementById('dpadDown');
+      const dpadLeft = document.getElementById('dpadLeft');
+      const dpadRight = document.getElementById('dpadRight');
+
+      const btnDash = document.getElementById('btnDash');
+      const dashCooldownRing = document.getElementById('dashCooldownRing');
+      const btnShootBullet = document.getElementById('btnShootBullet');
+      const badgeBulletCount = document.getElementById('badgeBulletCount');
+      const btnJumpItem = document.getElementById('btnJumpItem');
+      const badgeJumpCount = document.getElementById('badgeJumpCount');
+      const btnShieldItem = document.getElementById('btnShieldItem');
+      const badgeShieldCount = document.getElementById('badgeShieldCount');
+      const btnTentacleItem = document.getElementById('btnTentacleItem');
+      const badgeTentacleCount = document.getElementById('badgeTentacleCount');
+
+      const modalOverlay = document.getElementById('modalOverlay');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalSubtitle = document.getElementById('modalSubtitle');
+      const skinSelectorSection = document.getElementById('skinSelectorSection');
+      const resultStatsBox = document.getElementById('resultStatsBox');
+      const statFinalSize = document.getElementById('statFinalSize');
+      const statEaten = document.getElementById('statEaten');
+      const statCandies = document.getElementById('statCandies');
+      const btnStartGame = document.getElementById('btnStartGame');
+      const btnEndlessContinue = document.getElementById('btnEndlessContinue');
+      const btnRetryStage = document.getElementById('btnRetryStage');
+
+      let gameState = 'MENU';
+      let currentStageIdx = 0;
+      let selectedSkin = 'tardigrade';
+      let animFrameId = null;
+      let lastTime = performance.now();
+      let toastTimeout = null;
+      let frameCount = 0;
+
+      let viewW = window.innerWidth;
+      let viewH = window.innerHeight;
+      const camera = { x: 0, y: 0, zoom: 1.0, targetZoom: 1.0 };
+
+      // D-Pad, Canvas Drag & Keyboard Directional State
+      const input = {
+        dpadUp: false,
+        dpadDown: false,
+        dpadLeft: false,
+        dpadRight: false,
+        canvasDragActive: false,
+        canvasDragX: 0,
+        canvasDragY: 0,
+        keys: {}
+      };
+
+      // World Entities
+      let player = null;
+      let bacteriaList = [];
+      let candies = [];
+      let powerupItems = [];
+      let bullets = [];
+      let walls = [];
+      let meteors = [];
+      let lasers = [];
+      let circleRing = null;
+      let planktonSpores = [];
+      let particles = [];
+      let floatingTexts = [];
+      let backgroundBubbles = [];
+
+      let stageProgress = {
+        eatenInStage: 0,
+        missionCurrent: 0,
+        missionGoal: 8,
+        missionCompleted: false,
+        meteorSpawnTimer: 2.0,
+        laserSpawnTimer: 2.5
+      };
+
+      // =========================================================================
+      // 4. HELPER FUNCTIONS & WALL COLLISION / SPAWN PROTECTION
+      // =========================================================================
+      function randRange(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function dist(x1, y1, x2, y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+      }
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function closestPointOnSegment(px, py, x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) return { x: x1, y: y1 };
+        const t = clamp(((px - x1) * dx + (py - y1) * dy) / lenSq, 0, 1);
+        return { x: x1 + t * dx, y: y1 + t * dy };
+      }
+
+      // Ensures no candy, power-up, spore, or bacterium spawns stuck inside a wall!
+      function pushPositionOutOfWalls(pos, radius = 20) {
+        for (let pass = 0; pass < 2; pass++) {
+          for (let i = 0; i < walls.length; i++) {
+            const w = walls[i];
+            const cp = closestPointOnSegment(pos.x, pos.y, w.x1, w.y1, w.x2, w.y2);
+            const dx = pos.x - cp.x;
+            const dy = pos.y - cp.y;
+            const d = Math.hypot(dx, dy);
+            const minDist = radius + w.thickness + 8;
+            if (d < minDist) {
+              const nx = d > 0.001 ? dx / d : 1;
+              const ny = d > 0.001 ? dy / d : 0;
+              pos.x += nx * (minDist - d);
+              pos.y += ny * (minDist - d);
+            }
+          }
+        }
+        return pos;
+      }
+
+      function randomPointInDish(margin = 140, radius = 18) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * (WORLD_RADIUS - margin);
+        const pos = { x: Math.cos(angle) * r, y: Math.sin(angle) * r };
+        return pushPositionOutOfWalls(pos, radius);
+      }
+
+      function showToast(msg, isWarning = false) {
+        eventToast.textContent = msg;
+        eventToast.classList.remove('hidden', 'text-amber-200', 'text-rose-200');
+        eventToast.classList.add(isWarning ? 'text-rose-200' : 'text-amber-200');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          eventToast.classList.add('hidden');
+        }, 2800);
+      }
+
+      function spawnFloatingText(x, y, text, color = '#fde047', scale = 1.0) {
+        if (floatingTexts.length > 18) floatingTexts.shift();
+        floatingTexts.push({
+          x,
+          y,
+          text,
+          color,
+          scale,
+          alpha: 1.0,
+          vy: -48 * scale,
+          life: 1.15
+        });
+      }
+
+      function spawnSplashParticles(x, y, color, count = 8, speed = 130) {
+        const actualCount = Math.min(count, 10);
+        for (let i = 0; i < actualCount; i++) {
+          if (particles.length > 45) particles.shift();
+          const ang = Math.random() * Math.PI * 2;
+          const spd = randRange(speed * 0.35, speed);
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            r: randRange(3, 7),
+            color,
+            alpha: 1,
+            life: randRange(0.3, 0.65)
+          });
+        }
+      }
+
+      function resolveCircleWallsCollision(entity, ignoreWalls = false) {
+        if (ignoreWalls) return;
+        for (let i = 0; i < walls.length; i++) {
+          const w = walls[i];
+          const cp = closestPointOnSegment(entity.x, entity.y, w.x1, w.y1, w.x2, w.y2);
+          const dx = entity.x - cp.x;
+          const dy = entity.y - cp.y;
+          const d = Math.hypot(dx, dy);
+          const minDist = entity.r + w.thickness;
+          if (d < minDist) {
+            const nx = d > 0.001 ? dx / d : 1;
+            const ny = d > 0.001 ? dy / d : 0;
+            const overlap = minDist - d;
+            entity.x += nx * overlap;
+            entity.y += ny * overlap;
+            if (typeof entity.vx === 'number' && typeof entity.vy === 'number') {
+              const dot = entity.vx * nx + entity.vy * ny;
+              if (dot < 0) {
+                entity.vx -= 1.2 * dot * nx;
+                entity.vy -= 1.2 * dot * ny;
+              }
+            }
+          }
+        }
+      }
+
+      // =========================================================================
+      // 5. ENTITY FACTORIES & STAGE SETUP
+      // =========================================================================
+      function createPlayer() {
+        return {
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          r: 20, // Starting tardigrade size 20 μm
+          angle: 0,
+          walkCycle: 0,
+          dotProgress: 0, // Every 5 small dots -> +10% size!
+          totalEatCount: 0,
+          candyCount: 0,
+          dashCooldown: 0,
+          dashMaxCooldown: 1.6,
+          dashBoostTimer: 0,
+          mouthOpen: 0,
+          isScared: false,
+          growPulse: 0,
+          // Internal Parasite 10s State
+          parasiteActive: false,
+          parasiteTimer: 0,
+          parasiteBeepTimer: 0,
+          invulnTimer: 1.5,
+          // 4 Power-Up Item States & Charges
+          jumpCharges: 2,
+          jumpAirTimer: 0,
+          shieldCharges: 1,
+          invincibleTimer: 0,
+          bulletAmmo: 5,
+          tentacleCharges: 1,
+          tentacleTimer: 0,
+          tentacleSlashCooldown: 0
+        };
+      }
+
+      function createPowerupItem(forcedTypeId = null) {
+        const pos = randomPointInDish(160, 22);
+        const ptype = forcedTypeId
+          ? (POWERUP_TYPES.find(t => t.id === forcedTypeId) || POWERUP_TYPES[0])
+          : POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+        return {
+          x: pos.x,
+          y: pos.y,
+          r: 17,
+          type: ptype,
+          bobPhase: Math.random() * Math.PI * 2
+        };
+      }
+
+      function createStageWalls(count) {
+        const list = [];
+        const ringRadius = 560;
+        for (let i = 0; i < count; i++) {
+          const baseAng = (i / count) * Math.PI * 2 + 0.35;
+          const distFromCenter = (i % 2 === 0) ? ringRadius : 920;
+          const cx = Math.cos(baseAng) * distFromCenter;
+          const cy = Math.sin(baseAng) * distFromCenter;
+          const tangentAng = baseAng + (i % 2 === 0 ? Math.PI / 2 : 0.35);
+          const halfLen = randRange(120, 185);
+          list.push({
+            cx,
+            cy,
+            baseAng: tangentAng,
+            halfLen,
+            thickness: 18,
+            movePhase: Math.random() * Math.PI * 2,
+            moveAmp: (i % 2 === 1) ? 70 : 0,
+            x1: cx - Math.cos(tangentAng) * halfLen,
+            y1: cy - Math.sin(tangentAng) * halfLen,
+            x2: cx + Math.cos(tangentAng) * halfLen,
+            y2: cy + Math.sin(tangentAng) * halfLen
+          });
+        }
+        return list;
+      }
+
+      function createCircleTrack() {
+        const segments = [];
+        const num = 8;
+        const trackRadius = 320;
+        for (let i = 0; i < num; i++) {
+          const ang = (i / num) * Math.PI * 2;
+          segments.push({
+            index: i,
+            ang,
+            x: Math.cos(ang) * trackRadius,
+            y: Math.sin(ang) * trackRadius,
+            visited: false
+          });
+        }
+        return { x: 0, y: 0, r: trackRadius, segments };
+      }
+
+      function createBacterium(minR, maxR, avoidPlayer = true, forceParasite = null) {
+        const r = randRange(minR, maxR);
+        let pos = randomPointInDish(120, r + 6);
+        if (avoidPlayer && player) {
+          let tries = 0;
+          while (dist(pos.x, pos.y, player.x, player.y) < 300 && tries < 20) {
+            pos = randomPointInDish(120, r + 6);
+            tries++;
+          }
+        }
+        const cfg = STAGES[currentStageIdx];
+
+        let species;
+        const isSmallEdible = player ? (r < player.r * 0.96) : (r < 19);
+        const wantParasite = forceParasite !== null
+          ? forceParasite
+          : (isSmallEdible && Math.random() < cfg.parasiteRatio);
+
+        if (wantParasite) {
+          species = BACTERIA_SPECIES.find(s => s.isParasite);
+        } else {
+          let pool = BACTERIA_SPECIES.filter(s => !s.isParasite);
+          if (r > 34) pool = pool.filter(s => s.id !== 'coccus');
+          species = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        const ang = Math.random() * Math.PI * 2;
+        return {
+          id: Math.random().toString(36).slice(2),
+          x: pos.x,
+          y: pos.y,
+          vx: Math.cos(ang) * 40,
+          vy: Math.sin(ang) * 40,
+          r,
+          angle: ang,
+          species,
+          wobblePhase: Math.random() * Math.PI * 2,
+          aiTimer: randRange(0.1, 0.5),
+          targetX: pos.x,
+          targetY: pos.y,
+          state: 'wander',
+          growPulse: 0,
+          paralyzedTimer: 0
+        };
+      }
+
+      function createCandy(nearPlayer = false) {
+        let pos;
+        if (nearPlayer && player) {
+          const ang = Math.random() * Math.PI * 2;
+          const d = randRange(200, 400);
+          pos = {
+            x: clamp(player.x + Math.cos(ang) * d, -WORLD_RADIUS + 150, WORLD_RADIUS - 150),
+            y: clamp(player.y + Math.sin(ang) * d, -WORLD_RADIUS + 150, WORLD_RADIUS - 150)
+          };
+          pushPositionOutOfWalls(pos, 22);
+        } else {
+          pos = randomPointInDish(160, 22);
+        }
+        const ctype = CANDY_TYPES[Math.floor(Math.random() * CANDY_TYPES.length)];
+        return {
+          x: pos.x,
+          y: pos.y,
+          r: 14.5,
+          type: ctype,
+          rot: Math.random() * Math.PI * 2,
+          rotSpeed: randRange(-1.4, 1.4),
+          bobPhase: Math.random() * Math.PI * 2
+        };
+      }
+
+      function createSpore() {
+        const pos = randomPointInDish(50, 10);
+        const colors = ['#67e8f9', '#a7f3d0', '#fde68a', '#ddd6fe'];
+        return {
+          x: pos.x,
+          y: pos.y,
+          r: randRange(3.8, 5.8),
+          color: colors[Math.floor(Math.random() * colors.length)]
+        };
+      }
+
+      function spawnMeteorHazard() {
+        if (!player) return;
+        const ang = Math.random() * Math.PI * 2;
+        const d = randRange(50, 340);
+        const tx = clamp(player.x + Math.cos(ang) * d, -WORLD_RADIUS + 180, WORLD_RADIUS - 180);
+        const ty = clamp(player.y + Math.sin(ang) * d, -WORLD_RADIUS + 180, WORLD_RADIUS - 180);
+        meteors.push({
+          x: tx,
+          y: ty,
+          r: randRange(75, 108),
+          warnTime: 1.75,
+          maxWarnTime: 1.75,
+          exploded: false,
+          explodeTimer: 0.35
+        });
+      }
+
+      function spawnLaserHazard() {
+        if (!player) return;
+        const ang = Math.random() * Math.PI;
+        const offset = randRange(-150, 150);
+        const cx = player.x + Math.cos(ang + Math.PI / 2) * offset;
+        const cy = player.y + Math.sin(ang + Math.PI / 2) * offset;
+        lasers.push({
+          cx,
+          cy,
+          ang,
+          halfWidth: 26,
+          warnTime: 1.65,
+          activeTime: 0.75,
+          state: 'warn'
+        });
+      }
+
+      function setupStage(stageIndex, resetPlayer = false) {
+        currentStageIdx = clamp(stageIndex, 0, STAGES.length - 1);
+        const cfg = STAGES[currentStageIdx];
+
+        if (resetPlayer || !player) {
+          player = createPlayer();
+        } else {
+          player.x = 0;
+          player.y = 0;
+          player.vx = 0;
+          player.vy = 0;
+          player.r = 20;
+          player.dotProgress = 0;
+          player.parasiteActive = false;
+          player.parasiteTimer = 0;
+          player.invulnTimer = 2.0;
+          player.bulletAmmo = Math.max(player.bulletAmmo, 5);
+          player.jumpCharges = Math.max(player.jumpCharges, 2);
+        }
+
+        stageProgress.eatenInStage = 0;
+        stageProgress.missionCurrent = 0;
+        stageProgress.missionGoal = cfg.missionGoal;
+        stageProgress.missionCompleted = false;
+        stageProgress.meteorSpawnTimer = 2.2;
+        stageProgress.laserSpawnTimer = 2.6;
+
+        walls = createStageWalls(cfg.wallCount);
+        circleRing = cfg.hasRing ? createCircleTrack() : null;
+        meteors = [];
+        lasers = [];
+        bullets = [];
+        bacteriaList = [];
+        candies = [];
+        powerupItems = [];
+
+        // Spawn 10 smaller edible bacteria + 4 medium + 3 large
+        for (let i = 0; i < 10; i++) {
+          const forceP = (cfg.missionType === 'digest_parasite' && i < 5) ? true : null;
+          bacteriaList.push(createBacterium(10.5, 16.5, true, forceP));
+        }
+        for (let i = 0; i < 4; i++) {
+          bacteriaList.push(createBacterium(18.5, 25.5, true, false));
+        }
+        for (let i = 0; i < 3; i++) {
+          bacteriaList.push(createBacterium(28.0, 42.0, true, false));
+        }
+
+        candies.push(createCandy(true));
+        candies.push(createCandy(false));
+
+        powerupItems.push(createPowerupItem('jump'));
+        powerupItems.push(createPowerupItem('shield'));
+        powerupItems.push(createPowerupItem('bullets'));
+        powerupItems.push(createPowerupItem('tentacles'));
+
+        if (planktonSpores.length === 0) {
+          for (let i = 0; i < 75; i++) {
+            planktonSpores.push(createSpore());
+          }
+        }
+        if (backgroundBubbles.length === 0) {
+          for (let i = 0; i < 24; i++) {
+            const pos = randomPointInDish(20, 10);
+            backgroundBubbles.push({
+              x: pos.x,
+              y: pos.y,
+              r: randRange(20, 70),
+              vx: randRange(-7, 7),
+              vy: randRange(-7, 7),
+              alpha: randRange(0.03, 0.06)
+            });
+          }
+        }
+
+        camera.x = player.x;
+        camera.y = player.y;
+        updateHUD();
+        showToast('🔬 ' + cfg.name + '！吃5小點+10%、吃細菌+10%，善用跳躍/無敵/子彈/觸手！');
+      }
+
+      function advanceToNextStage() {
+        sound.playEndFanfare(true);
+        spawnSplashParticles(player.x, player.y, '#fde047', 16, 220);
+
+        if (currentStageIdx + 1 >= STAGES.length) {
+          triggerEndGame(true);
+          return;
+        }
+
+        const nextIdx = currentStageIdx + 1;
+        setupStage(nextIdx, false);
+        spawnFloatingText(player.x, player.y - player.r - 20, '🎉 晉級 ' + STAGES[nextIdx].name + '！', '#fde047', 1.3);
+      }
+
+      // =========================================================================
+      // 6. PLAYER SKILLS & POWER-UP ACTIONS
+      // =========================================================================
+      function useJumpItem() {
+        if (gameState !== 'PLAYING' || !player) return;
+        if (player.jumpAirTimer > 0) return;
+        if (player.jumpCharges <= 0) {
+          showToast('⚠️ 跳躍次數用完囉！去撿場上的「🦘跳躍道具」補充！', true);
+          return;
+        }
+        player.jumpCharges--;
+        player.jumpAirTimer = 1.25;
+        player.dashBoostTimer = 0.65;
+        player.vx = Math.cos(player.angle) * 380;
+        player.vy = Math.sin(player.angle) * 380;
+        sound.playJump();
+        spawnSplashParticles(player.x, player.y, '#34d399', 10, 160);
+        spawnFloatingText(player.x, player.y - player.r, '🦘 緊急跳躍閃避！', '#34d399', 1.15);
+        updateHUD();
+      }
+
+      function useShieldItem() {
+        if (gameState !== 'PLAYING' || !player) return;
+        if (player.shieldCharges <= 0) {
+          showToast('⚠️ 無敵護盾用完囉！去撿場上的「🛡️無敵道具」補充！', true);
+          return;
+        }
+        player.shieldCharges--;
+        player.invincibleTimer = 10.0;
+        sound.playCandyPowerup(true);
+        spawnSplashParticles(player.x, player.y, '#fbbf24', 12, 180);
+        spawnFloatingText(player.x, player.y - player.r, '🛡️ 10秒無敵護盾啟動！', '#fde047', 1.2);
+        showToast('🛡️ 啟動 10 秒無敵狀態！期間不怕任何細菌、隕石與激光！');
+        updateHUD();
+      }
+
+      function useTentacleItem() {
+        if (gameState !== 'PLAYING' || !player) return;
+        if (player.tentacleCharges <= 0) {
+          showToast('⚠️ 觸手道具用完囉！去撿場上的「🐙觸手道具」補充！', true);
+          return;
+        }
+        player.tentacleCharges--;
+        player.tentacleTimer = 10.0;
+        sound.playTentacleSlash();
+        spawnSplashParticles(player.x, player.y, '#e879f9', 12, 180);
+        spawnFloatingText(player.x, player.y - player.r, '🐙 10秒觸手攻擊啟動！', '#f472b6', 1.2);
+        showToast('🐙 長出狂暴觸手 10 秒！靠近任何敵人都會自動鞭打並吞噬！');
+        updateHUD();
+      }
+
+      function fireParalyzeBullet() {
+        if (gameState !== 'PLAYING' || !player) return false;
+        if (player.bulletAmmo <= 0) {
+          showToast('⚠️ 麻痺子彈用完囉！去撿場上的「⚡子彈道具」裝填 5 發！', true);
+          return false;
+        }
+        player.bulletAmmo--;
+        sound.playBulletZap();
+
+        // Smart Aim-Assist: if a non-paralyzed bacterium is within a 45° cone ahead, aim directly at it!
+        let fireAngle = player.angle;
+        let bestTarget = null;
+        let bestDist = 520;
+        for (let i = 0; i < bacteriaList.length; i++) {
+          const b = bacteriaList[i];
+          if (b.paralyzedTimer > 0) continue;
+          const d = dist(player.x, player.y, b.x, b.y);
+          if (d < bestDist) {
+            const angToB = Math.atan2(b.y - player.y, b.x - player.x);
+            let diff = Math.abs(angToB - player.angle);
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            if (diff < 0.78) { // Within ~45 degrees ahead
+              bestDist = d;
+              bestTarget = b;
+            }
+          }
+        }
+        if (bestTarget) {
+          fireAngle = Math.atan2(bestTarget.y - player.y, bestTarget.x - player.x);
+        }
+
+        const muzzleX = player.x + Math.cos(fireAngle) * (player.r * 1.15);
+        const muzzleY = player.y + Math.sin(fireAngle) * (player.r * 1.15);
+        bullets.push({
+          x: muzzleX,
+          y: muzzleY,
+          vx: Math.cos(fireAngle) * 540,
+          vy: Math.sin(fireAngle) * 540,
+          r: 8.5,
+          life: 1.6
+        });
+        spawnFloatingText(muzzleX, muzzleY - 10, '⚡ 麻痺彈! (' + player.bulletAmmo + '發)', '#38bdf8', 0.95);
+        updateHUD();
+        return true;
+      }
+
+      // Main Circular Control Key: Triggers Water-Jet Dash (without wasting bullets!)
+      function triggerMainCircularButton() {
+        if (gameState !== 'PLAYING' || !player) return;
+        sound.init();
+
+        if (player.dashCooldown <= 0) {
+          player.dashCooldown = player.dashMaxCooldown;
+          player.dashBoostTimer = 0.42;
+          sound.playDash();
+          spawnSplashParticles(player.x, player.y, '#67e8f9', 7, 150);
+          spawnFloatingText(player.x, player.y - player.r, '💦 噴射衝刺！', '#67e8f9', 0.95);
+          updateHUD();
+        }
+      }
+
+      function checkStageCompletion() {
+        if (stageProgress.eatenInStage >= EAT_TARGET_PER_STAGE && stageProgress.missionCompleted) {
+          advanceToNextStage();
+          return true;
+        }
+        return false;
+      }
+
+      // Helper when player eats or defeats a bacterium (+10% exact growth!)
+      function handlePlayerEatBacterium(b, idxInList, viaTentacle = false) {
+        const cfg = STAGES[currentStageIdx];
+        player.r = Math.min(125, player.r * 1.10); // Exact +10% size growth!
+        player.totalEatCount++;
+        stageProgress.eatenInStage++;
+        player.growPulse = 1.0;
+
+        sound.playBuziEat(true);
+        spawnSplashParticles(b.x, b.y, b.species.color, 10, 160);
+
+        if (b.species.isParasite) {
+          if (viaTentacle || player.invincibleTimer > 0) {
+            // Tentacles or Invincibility Shield safely neutralizes the parasite upon eating!
+            // Also count toward Stage 5 digest_parasite mission so player never gets soft-locked!
+            if (cfg.missionType === 'digest_parasite' && !stageProgress.missionCompleted) {
+              stageProgress.missionCurrent++;
+              if (stageProgress.missionCurrent >= stageProgress.missionGoal) {
+                stageProgress.missionCompleted = true;
+                showToast('✅ 寄生菌淨化任務完成！吃滿 10 隻對手即可過關！');
+              }
+            }
+            spawnFloatingText(b.x, b.y, '🛡️ 免役淨化寄生菌！+10% (' + stageProgress.eatenInStage + '/10)', '#a3e635', 1.1);
+          } else {
+            player.parasiteActive = true;
+            player.parasiteTimer = PARASITE_MAX_TIME;
+            player.parasiteBeepTimer = 0.2;
+            if (candies.length < 2) candies.push(createCandy(true));
+            spawnFloatingText(player.x, player.y - player.r - 14, '☣️ 寄生菌入體！10秒內吃糖果！(+10%)', '#bef264', 1.15);
+            showToast('☣️ 警告！吃到寄生毒孢菌！請在 10 秒內跟著箭頭吃糖果消化它！', true);
+          }
+        } else {
+          const prefix = viaTentacle ? '🐙 觸手獵殺！' : '布滋布滋！';
+          spawnFloatingText(b.x, b.y, prefix + ' 體型+10% (' + stageProgress.eatenInStage + '/10)', '#67e8f9', 1.1);
+        }
+
+        bacteriaList.splice(idxInList, 1);
+        updateHUD();
+
+        if (checkStageCompletion()) return true;
+        if (stageProgress.eatenInStage === EAT_TARGET_PER_STAGE && !stageProgress.missionCompleted) {
+          showToast('🎯 已吃滿 10 隻對手！請完成左上角的「階段專屬任務」即可過關！');
+        }
+        return false;
+      }
+
+      // =========================================================================
+      // 7. MAIN UPDATE LOOP
+      // =========================================================================
+      function updateGame(dt) {
+        if (gameState !== 'PLAYING' || !player) return;
+        const cfg = STAGES[currentStageIdx];
+
+        if (player.invulnTimer > 0) player.invulnTimer = Math.max(0, player.invulnTimer - dt);
+        if (player.jumpAirTimer > 0) player.jumpAirTimer = Math.max(0, player.jumpAirTimer - dt);
+        if (player.invincibleTimer > 0) player.invincibleTimer = Math.max(0, player.invincibleTimer - dt);
+        if (player.tentacleTimer > 0) player.tentacleTimer = Math.max(0, player.tentacleTimer - dt);
+        if (player.tentacleSlashCooldown > 0) player.tentacleSlashCooldown = Math.max(0, player.tentacleSlashCooldown - dt);
+
+        const isProtected = (player.invulnTimer > 0 || player.invincibleTimer > 0 || player.jumpAirTimer > 0);
+
+        // 0. Update Dynamic Sliding Walls & Push Candies/Powerups out of moving walls
+        for (let i = 0; i < walls.length; i++) {
+          const w = walls[i];
+          if (w.moveAmp > 0) {
+            w.movePhase += dt * 1.35;
+            const shift = Math.sin(w.movePhase) * w.moveAmp;
+            const perpAng = w.baseAng + Math.PI / 2;
+            const curCx = w.cx + Math.cos(perpAng) * shift;
+            const curCy = w.cy + Math.sin(perpAng) * shift;
+            w.x1 = curCx - Math.cos(w.baseAng) * w.halfLen;
+            w.y1 = curCy - Math.sin(w.baseAng) * w.halfLen;
+            w.x2 = curCx + Math.cos(w.baseAng) * w.halfLen;
+            w.y2 = curCy + Math.sin(w.baseAng) * w.halfLen;
+          }
+        }
+
+        // 1. Cross D-Pad + Keyboard + Optional Canvas Drag Steering
+        let moveX = 0;
+        let moveY = 0;
+
+        if (input.dpadUp || input.keys['ArrowUp'] || input.keys['KeyW']) moveY -= 1;
+        if (input.dpadDown || input.keys['ArrowDown'] || input.keys['KeyS']) moveY += 1;
+        if (input.dpadLeft || input.keys['ArrowLeft'] || input.keys['KeyA']) moveX -= 1;
+        if (input.dpadRight || input.keys['ArrowRight'] || input.keys['KeyD']) moveX += 1;
+
+        let moveMag = 0;
+        if (moveX !== 0 || moveY !== 0) {
+          const len = Math.hypot(moveX, moveY);
+          moveX /= len;
+          moveY /= len;
+          moveMag = 1.0;
+        } else if (input.canvasDragActive) {
+          const worldTargetX = camera.x + (input.canvasDragX - viewW / 2) / camera.zoom;
+          const worldTargetY = camera.y + (input.canvasDragY - viewH / 2) / camera.zoom;
+          const dx = worldTargetX - player.x;
+          const dy = worldTargetY - player.y;
+          const d = Math.hypot(dx, dy);
+          if (d > 10) {
+            moveX = dx / d;
+            moveY = dy / d;
+            moveMag = clamp(d / 85, 0.25, 1.0);
+          }
+        }
+
+        const baseSpeed = 235 / Math.pow(player.r / 20, 0.14);
+        const boostMult = player.jumpAirTimer > 0 ? 1.65 : (player.dashBoostTimer > 0 ? 2.1 : 1.0);
+        const targetVx = moveX * baseSpeed * moveMag * boostMult;
+        const targetVy = moveY * baseSpeed * moveMag * boostMult;
+
+        player.vx += (targetVx - player.vx) * Math.min(1, dt * 10.0);
+        player.vy += (targetVy - player.vy) * Math.min(1, dt * 10.0);
+
+        player.x += player.vx * dt;
+        player.y += player.vy * dt;
+
+        resolveCircleWallsCollision(player, player.jumpAirTimer > 0);
+
+        const speed = Math.hypot(player.vx, player.vy);
+        if (speed > 8) {
+          player.angle = Math.atan2(player.vy, player.vx);
+        }
+        player.walkCycle += dt * (3.8 + speed * 0.045);
+
+        const distFromCenter = Math.hypot(player.x, player.y);
+        const maxPlayerDist = WORLD_RADIUS - player.r;
+        if (distFromCenter > maxPlayerDist) {
+          const ang = Math.atan2(player.y, player.x);
+          player.x = Math.cos(ang) * maxPlayerDist;
+          player.y = Math.sin(ang) * maxPlayerDist;
+        }
+
+        if (player.dashCooldown > 0) player.dashCooldown = Math.max(0, player.dashCooldown - dt);
+        if (player.dashBoostTimer > 0) player.dashBoostTimer = Math.max(0, player.dashBoostTimer - dt);
+        if (player.growPulse > 0) player.growPulse = Math.max(0, player.growPulse - dt * 2.5);
+
+        // 2. Update Paralyzing Bullets Fired by Player
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const bul = bullets[i];
+          bul.x += bul.vx * dt;
+          bul.y += bul.vy * dt;
+          bul.life -= dt;
+          if (bul.life <= 0 || Math.hypot(bul.x, bul.y) > WORLD_RADIUS) {
+            bullets.splice(i, 1);
+            continue;
+          }
+          let hit = false;
+          for (let j = 0; j < bacteriaList.length; j++) {
+            const b = bacteriaList[j];
+            if (dist(bul.x, bul.y, b.x, b.y) < b.r + bul.r + 6) {
+              b.paralyzedTimer = 5.0; // Paralyze opponent for 5 seconds!
+              b.vx = 0;
+              b.vy = 0;
+              sound.playBulletZap();
+              spawnSplashParticles(b.x, b.y, '#38bdf8', 10, 150);
+              spawnFloatingText(b.x, b.y - b.r - 8, '⚡ 麻痺定身 5秒！', '#38bdf8', 1.1);
+              bullets.splice(i, 1);
+              hit = true;
+              break;
+            }
+          }
+          if (hit) continue;
+        }
+
+        // 3. Update 10-Second Tentacle Attack
+        if (player.tentacleTimer > 0) {
+          const tentacleReach = player.r * 2.45 + 28;
+          for (let i = bacteriaList.length - 1; i >= 0; i--) {
+            const b = bacteriaList[i];
+            const d = dist(player.x, player.y, b.x, b.y);
+            if (d < tentacleReach + b.r * 0.5) {
+              if (player.tentacleSlashCooldown <= 0) {
+                player.tentacleSlashCooldown = 0.18;
+                sound.playTentacleSlash();
+              }
+              if (handlePlayerEatBacterium(b, i, true)) return;
+            }
+          }
+        }
+
+        // 4. Update 10-Second Internal Parasite Countdown
+        if (player.parasiteActive) {
+          player.parasiteTimer -= dt;
+          player.parasiteBeepTimer -= dt;
+          if (player.parasiteBeepTimer <= 0) {
+            player.parasiteBeepTimer = player.parasiteTimer < 3.5 ? 0.35 : 0.75;
+            sound.playParasiteAlarm();
+          }
+          if (candies.length === 0) candies.push(createCandy(true));
+          if (player.parasiteTimer <= 0) {
+            player.parasiteActive = false;
+            sound.playHazardBoom(false);
+            spawnSplashParticles(player.x, player.y, '#a855f7', 16, 220);
+            triggerEndGame(false, '體內寄生毒孢菌（10秒未吃糖果消化遭反噬）');
+            return;
+          }
+        }
+
+        // 5. Update Circle Running Track Mission
+        if (circleRing) {
+          let visitedCount = 0;
+          for (let i = 0; i < circleRing.segments.length; i++) {
+            const seg = circleRing.segments[i];
+            if (!seg.visited && dist(player.x, player.y, seg.x, seg.y) < player.r + 48) {
+              seg.visited = true;
+              sound.playBuziEat(false);
+              spawnSplashParticles(seg.x, seg.y, '#38bdf8', 8, 110);
+              spawnFloatingText(seg.x, seg.y, '🌀 軌跡點亮！', '#38bdf8', 0.95);
+            }
+            if (seg.visited) visitedCount++;
+          }
+          if (cfg.missionType === 'circle_run' || cfg.missionType === 'maze_ring') {
+            stageProgress.missionCurrent = visitedCount;
+            if (visitedCount >= circleRing.segments.length && !stageProgress.missionCompleted) {
+              stageProgress.missionCompleted = true;
+              sound.playCandyPowerup(true);
+              showToast('✅ 圓圈繞行任務完成！吃滿 10 隻對手即可過關！');
+              if (checkStageCompletion()) return;
+            }
+          }
+        }
+
+        // 6. Update Falling Meteors
+        if (cfg.meteorInterval > 0) {
+          stageProgress.meteorSpawnTimer -= dt;
+          if (stageProgress.meteorSpawnTimer <= 0) {
+            stageProgress.meteorSpawnTimer = cfg.meteorInterval;
+            spawnMeteorHazard();
+          }
+        }
+        for (let i = meteors.length - 1; i >= 0; i--) {
+          const m = meteors[i];
+          if (!m.exploded) {
+            m.warnTime -= dt;
+            if (m.warnTime <= 0) {
+              m.exploded = true;
+              sound.playHazardBoom(false);
+              spawnSplashParticles(m.x, m.y, '#fb7185', 12, 180);
+
+              const dPlayer = dist(player.x, player.y, m.x, m.y);
+              if (dPlayer < m.r + player.r * 0.6 && !isProtected) {
+                triggerEndGame(false, '顯微隕石直擊');
+                return;
+              } else if (cfg.missionType === 'dodge_meteors' && !stageProgress.missionCompleted) {
+                stageProgress.missionCurrent++;
+                spawnFloatingText(player.x, player.y - player.r - 12, '☄️ 閃避隕石 (' + stageProgress.missionCurrent + '/' + stageProgress.missionGoal + ')', '#fde047', 1.0);
+                if (stageProgress.missionCurrent >= stageProgress.missionGoal) {
+                  stageProgress.missionCompleted = true;
+                  showToast('✅ 閃避隕石任務達成！吃滿 10 隻對手即可晉級！');
+                  if (checkStageCompletion()) return;
+                }
+              }
+            }
+          } else {
+            m.explodeTimer -= dt;
+            if (m.explodeTimer <= 0) meteors.splice(i, 1);
+          }
+        }
+
+        // 7. Update Sudden Laser Beams
+        if (cfg.laserInterval > 0) {
+          stageProgress.laserSpawnTimer -= dt;
+          if (stageProgress.laserSpawnTimer <= 0) {
+            stageProgress.laserSpawnTimer = cfg.laserInterval;
+            spawnLaserHazard();
+          }
+        }
+        for (let i = lasers.length - 1; i >= 0; i--) {
+          const l = lasers[i];
+          if (l.state === 'warn') {
+            l.warnTime -= dt;
+            if (l.warnTime <= 0) {
+              l.state = 'firing';
+              sound.playHazardBoom(true);
+            }
+          } else {
+            l.activeTime -= dt;
+            const dx = Math.cos(l.ang);
+            const dy = Math.sin(l.ang);
+            const perpDist = Math.abs((player.x - l.cx) * (-dy) + (player.y - l.cy) * dx);
+            if (perpDist < l.halfWidth + player.r * 0.5 && !isProtected) {
+              spawnSplashParticles(player.x, player.y, '#ef4444', 14, 180);
+              triggerEndGame(false, '突發高能激光束灼傷');
+              return;
+            }
+            if (l.activeTime <= 0) {
+              if (cfg.missionType === 'dodge_lasers' && !stageProgress.missionCompleted) {
+                stageProgress.missionCurrent++;
+                spawnFloatingText(player.x, player.y - player.r - 12, '⚡ 閃避激光 (' + stageProgress.missionCurrent + '/' + stageProgress.missionGoal + ')', '#38bdf8', 1.0);
+                if (stageProgress.missionCurrent >= stageProgress.missionGoal) {
+                  stageProgress.missionCompleted = true;
+                  showToast('✅ 閃避激光任務達成！吃滿 10 隻對手即可晉級！');
+                  if (checkStageCompletion()) return;
+                }
+              }
+              lasers.splice(i, 1);
+            }
+          }
+        }
+
+        // 8. Eat Small Dots (吃小點點 5 個 -> 長大 10%!)
+        for (let i = planktonSpores.length - 1; i >= 0; i--) {
+          const sp = planktonSpores[i];
+          if (dist(player.x, player.y, sp.x, sp.y) < player.r + sp.r + 3) {
+            player.dotProgress++;
+            sound.playBuziEat(false);
+            if (player.dotProgress >= DOTS_FOR_GROWTH) {
+              player.dotProgress = 0;
+              player.r = Math.min(125, player.r * 1.10);
+              player.growPulse = 0.85;
+              sound.playBuziEat(true);
+              spawnSplashParticles(player.x, player.y, '#67e8f9', 8, 130);
+              spawnFloatingText(player.x, player.y - player.r - 8, '✨ 吃滿5小點！體型 +10%！', '#67e8f9', 1.1);
+            } else {
+              spawnFloatingText(sp.x, sp.y, '小點 ' + player.dotProgress + '/5', '#a5f3fc', 0.8);
+            }
+            planktonSpores[i] = createSpore();
+            updateHUD();
+          }
+        }
+
+        // 9. Power-Up Item Pickups on Map
+        for (let i = powerupItems.length - 1; i >= 0; i--) {
+          const item = powerupItems[i];
+          item.bobPhase += dt * 3.2;
+          resolveCircleWallsCollision(item, false);
+          if (dist(player.x, player.y, item.x, item.y) < player.r + item.r) {
+            sound.playCandyPowerup(true);
+            spawnSplashParticles(item.x, item.y, item.type.color, 12, 160);
+
+            if (item.type.id === 'jump') {
+              player.jumpCharges += 2;
+              spawnFloatingText(player.x, player.y - player.r, '🦘 獲得跳躍道具 (+2次)！', '#34d399', 1.15);
+              showToast('🦘 撿到跳躍道具！遇到危險時可按右下角「🦘緊急跳躍」躍過敵人！');
+            } else if (item.type.id === 'shield') {
+              player.invincibleTimer = 10.0;
+              player.shieldCharges += 1;
+              spawnFloatingText(player.x, player.y - player.r, '🛡️ 10秒無敵狀態啟動！', '#fde047', 1.2);
+              showToast('🛡️ 獲得 10 秒無敵狀態（並備存 1 次護盾）！');
+            } else if (item.type.id === 'bullets') {
+              player.bulletAmmo = Math.min(15, player.bulletAmmo + 5);
+              spawnFloatingText(player.x, player.y - player.r, '⚡ 裝填 5 發麻痺子彈！', '#38bdf8', 1.15);
+              showToast('⚡ 撿到麻痺彈匣！按「⚡麻痺子彈」鍵可麻痺對手 5 秒！');
+            } else if (item.type.id === 'tentacles') {
+              player.tentacleTimer = 10.0;
+              player.tentacleCharges += 1;
+              spawnFloatingText(player.x, player.y - player.r, '🐙 10秒狂暴觸手長出！', '#e879f9', 1.2);
+              showToast('🐙 長出狂暴觸手 10 秒！靠近任何細菌自動鞭打吞噬！');
+            }
+
+            powerupItems.splice(i, 1);
+            updateHUD();
+          }
+        }
+        if (powerupItems.length < 4 && Math.random() < dt * 0.45) {
+          powerupItems.push(createPowerupItem());
+        }
+
+        // 10. Limited Magic Candies (Digests Parasite + 30% Growth!)
+        for (let i = candies.length - 1; i >= 0; i--) {
+          const c = candies[i];
+          c.rot += c.rotSpeed * dt;
+          c.bobPhase += dt * 3.5;
+          resolveCircleWallsCollision(c, false);
+
+          if (dist(player.x, player.y, c.x, c.y) < player.r + c.r * 0.85) {
+            player.r = Math.min(125, player.r * 1.30);
+            player.candyCount++;
+            player.growPulse = 1.0;
+            sound.playCandyPowerup(true);
+            spawnSplashParticles(c.x, c.y, c.type.primary, 12, 170);
+
+            if (player.parasiteActive) {
+              player.parasiteActive = false;
+              player.parasiteTimer = 0;
+              spawnFloatingText(player.x, player.y - player.r - 15, '✨ 成功消化寄生菌！+30%！', '#a3e635', 1.25);
+              showToast('🍬 糖果成功消化了體內的寄生菌，體型還長大 30%！');
+
+              if (cfg.missionType === 'digest_parasite' && !stageProgress.missionCompleted) {
+                stageProgress.missionCurrent++;
+                if (stageProgress.missionCurrent >= stageProgress.missionGoal) {
+                  stageProgress.missionCompleted = true;
+                  showToast('✅ 寄生菌消化任務完成！吃滿 10 隻對手即可過關！');
+                }
+              }
+            } else {
+              spawnFloatingText(player.x, player.y - player.r, '🍬 布滋布滋！體型 +30%！', '#fde047', 1.15);
+            }
+
+            candies.splice(i, 1);
+            updateHUD();
+            if (checkStageCompletion()) return;
+            continue;
+          }
+
+          let eatenByBacterium = false;
+          // Do not allow AI bacteria to eat the last candy if player has an active parasite!
+          if (!player.parasiteActive || candies.length > 1) {
+            for (let j = 0; j < bacteriaList.length; j++) {
+              const b = bacteriaList[j];
+              if (b.paralyzedTimer <= 0 && dist(b.x, b.y, c.x, c.y) < b.r + c.r * 0.85) {
+                b.r = Math.min(82, b.r * 1.30);
+                b.growPulse = 1.0;
+                spawnSplashParticles(c.x, c.y, '#fb7185', 8, 120);
+                spawnFloatingText(b.x, b.y - b.r, '🦠 糖果 +30%！', '#fda4af', 1.0);
+                candies.splice(i, 1);
+                eatenByBacterium = true;
+                break;
+              }
+            }
+          }
+          if (eatenByBacterium) continue;
+        }
+
+        const desiredCandies = player.parasiteActive ? 3 : 2;
+        if (candies.length < desiredCandies && Math.random() < dt * (player.parasiteActive ? 1.2 : 0.35)) {
+          candies.push(createCandy(player.parasiteActive));
+        }
+
+        // 11. AI Bacteria Movement & Paralyzed State
+        let playerScared = false;
+        let playerNearPrey = false;
+
+        for (let i = 0; i < bacteriaList.length; i++) {
+          const b = bacteriaList[i];
+          b.wobblePhase += dt * 5.0;
+          if (b.growPulse > 0) b.growPulse = Math.max(0, b.growPulse - dt * 2.2);
+
+          if (b.paralyzedTimer > 0) {
+            b.paralyzedTimer = Math.max(0, b.paralyzedTimer - dt);
+            b.vx *= 0.85;
+            b.vy *= 0.85;
+            continue;
+          }
+
+          b.aiTimer -= dt;
+          if (b.aiTimer <= 0) {
+            b.aiTimer = randRange(0.28, 0.55);
+
+            let nearestThreat = null;
+            let nearestThreatDist = 310;
+            let nearestPrey = null;
+            let nearestPreyDist = 340;
+
+            const dp = dist(b.x, b.y, player.x, player.y);
+            if ((player.r > b.r * 1.03 || player.tentacleTimer > 0) && dp < nearestThreatDist) {
+              nearestThreat = player;
+              nearestThreatDist = dp;
+            } else if (b.r > player.r * 1.05 && dp < nearestPreyDist) {
+              nearestPrey = player;
+              nearestPreyDist = dp;
+            }
+
+            if (nearestThreat && nearestThreatDist < 240) {
+              b.state = 'flee';
+              const ang = Math.atan2(b.y - nearestThreat.y, b.x - nearestThreat.x);
+              b.targetX = b.x + Math.cos(ang) * 280;
+              b.targetY = b.y + Math.sin(ang) * 280;
+            } else if (nearestPrey && Math.random() < b.species.aggressiveness + 0.15) {
+              b.state = 'hunt';
+              b.targetX = nearestPrey.x;
+              b.targetY = nearestPrey.y;
+            } else {
+              b.state = 'wander';
+              const ang = b.angle + randRange(-1.2, 1.2);
+              b.targetX = b.x + Math.cos(ang) * 260;
+              b.targetY = b.y + Math.sin(ang) * 260;
+            }
+          }
+
+          const dx = b.targetX - b.x;
+          const dy = b.targetY - b.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const maxSpd = (145 / Math.pow(b.r / 18, 0.22)) * b.species.speedMult * (b.state === 'flee' ? 1.12 : 1.0);
+          const tvx = (dx / d) * maxSpd;
+          const tvy = (dy / d) * maxSpd;
+
+          b.vx += (tvx - b.vx) * Math.min(1, dt * 5.0);
+          b.vy += (tvy - b.vy) * Math.min(1, dt * 5.0);
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+
+          resolveCircleWallsCollision(b, false);
+          b.angle = Math.atan2(b.vy, b.vx);
+
+          const bd = Math.hypot(b.x, b.y);
+          const maxBD = WORLD_RADIUS - b.r;
+          if (bd > maxBD) {
+            const ang = Math.atan2(b.y, b.x);
+            b.x = Math.cos(ang) * maxBD;
+            b.y = Math.sin(ang) * maxBD;
+            b.targetX = 0;
+            b.targetY = 0;
+          }
+
+          const distToPlayer = dist(b.x, b.y, player.x, player.y);
+          if (b.r > player.r * 1.05 && distToPlayer < b.r + player.r + 100) {
+            playerScared = true;
+          } else if (player.r > b.r * 1.03 && distToPlayer < player.r + b.r + 90) {
+            playerNearPrey = true;
+          }
+        }
+
+        player.isScared = playerScared;
+        player.mouthOpen += ((playerNearPrey ? 1 : 0) - player.mouthOpen) * Math.min(1, dt * 10);
+
+        // 12. Player-vs-Bacteria Collision (Eat 1 Bacterium -> +10% Size!)
+        if (player.jumpAirTimer <= 0) {
+          for (let i = bacteriaList.length - 1; i >= 0; i--) {
+            const b = bacteriaList[i];
+            const d = dist(player.x, player.y, b.x, b.y);
+
+            if (d < player.r + b.r * 0.52) {
+              if (player.r >= b.r * 1.02 || b.paralyzedTimer > 0) {
+                if (handlePlayerEatBacterium(b, i, false)) return;
+              } else if (b.r > player.r * 1.04 && d < b.r + player.r * 0.38) {
+                if (isProtected) {
+                  const pushAng = Math.atan2(b.y - player.y, b.x - player.x);
+                  b.x += Math.cos(pushAng) * 45;
+                  b.y += Math.sin(pushAng) * 45;
+                  b.vx = Math.cos(pushAng) * 220;
+                  b.vy = Math.sin(pushAng) * 220;
+                } else {
+                  sound.playBuziEat(true);
+                  spawnSplashParticles(player.x, player.y, SKINS[selectedSkin].core, 16, 200);
+                  triggerEndGame(false, b.species.name);
+                  return;
+                }
+              }
+            }
+          }
+        }
+
+        // Maintain bacteria count so player can always reach 10/10 and complete Stage 5 parasite mission
+        if (bacteriaList.length < 15) {
+          const edibleCount = bacteriaList.filter(b => b.r < player.r * 0.96).length;
+          const parasiteCount = bacteriaList.filter(b => b.species.isParasite).length;
+          if (cfg.missionType === 'digest_parasite' && !stageProgress.missionCompleted && parasiteCount < 3) {
+            bacteriaList.push(createBacterium(Math.max(10, player.r * 0.52), player.r * 0.82, true, true));
+          } else if (edibleCount < 7) {
+            bacteriaList.push(createBacterium(Math.max(10, player.r * 0.52), player.r * 0.85, true, null));
+          } else {
+            bacteriaList.push(createBacterium(player.r * 0.75, player.r * 1.28, true, false));
+          }
+        }
+
+        // 13. Smooth Camera & Particles
+        camera.x += (player.x - camera.x) * Math.min(1, dt * 6.5);
+        camera.y += (player.y - camera.y) * Math.min(1, dt * 6.5);
+
+        const mobileScale = Math.min(viewW, viewH) < 520 ? 0.80 : 1.0;
+        camera.targetZoom = clamp((32 / (player.r + 14)) * mobileScale, 0.40, 1.10);
+        camera.zoom += (camera.targetZoom - camera.zoom) * Math.min(1, dt * 3.2);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vx *= 0.90;
+          p.vy *= 0.90;
+          p.life -= dt;
+          p.alpha = clamp(p.life * 2, 0, 1);
+          if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+          const ft = floatingTexts[i];
+          ft.y += ft.vy * dt;
+          ft.life -= dt;
+          ft.alpha = clamp(ft.life, 0, 1);
+          if (ft.life <= 0) floatingTexts.splice(i, 1);
+        }
+
+        for (let i = 0; i < backgroundBubbles.length; i++) {
+          const bb = backgroundBubbles[i];
+          bb.x += bb.vx * dt;
+          bb.y += bb.vy * dt;
+          if (Math.hypot(bb.x, bb.y) > WORLD_RADIUS) {
+            bb.vx *= -1;
+            bb.vy *= -1;
+          }
+        }
+
+        frameCount++;
+        if (frameCount % 3 === 0) {
+          updateHUD();
+        }
+      }
+
+      // =========================================================================
+      // 8. FAST, ZERO-LAG RENDERING
+      // =========================================================================
+      function drawMicroscopeBackground() {
+        ctx.fillStyle = '#071d2c';
+        ctx.fillRect(0, 0, viewW, viewH);
+
+        ctx.save();
+        ctx.translate(viewW / 2, viewH / 2);
+        ctx.scale(camera.zoom, camera.zoom);
+        ctx.translate(-camera.x, -camera.y);
+
+        const gridStep = 150;
+        const startX = Math.floor((camera.x - viewW / camera.zoom) / gridStep) * gridStep;
+        const endX = camera.x + viewW / camera.zoom;
+        const startY = Math.floor((camera.y - viewH / camera.zoom) / gridStep) * gridStep;
+        const endY = camera.y + viewH / camera.zoom;
+
+        ctx.lineWidth = 1 / camera.zoom;
+        ctx.strokeStyle = 'rgba(103, 232, 249, 0.07)';
+        ctx.beginPath();
+        for (let x = startX; x <= endX; x += gridStep) {
+          ctx.moveTo(x, startY);
+          ctx.lineTo(x, endY);
+        }
+        for (let y = startY; y <= endY; y += gridStep) {
+          ctx.moveTo(startX, y);
+          ctx.lineTo(endX, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(103, 232, 249, 0.04)';
+        for (let i = 0; i < backgroundBubbles.length; i++) {
+          const bb = backgroundBubbles[i];
+          ctx.beginPath();
+          ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, WORLD_RADIUS, 0, Math.PI * 2);
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, WORLD_RADIUS + 10, 0, Math.PI * 2);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawCircleTrack() {
+        if (!circleRing) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(circleRing.x, circleRing.y, circleRing.r, 0, Math.PI * 2);
+        ctx.lineWidth = 20;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+        ctx.stroke();
+
+        for (let i = 0; i < circleRing.segments.length; i++) {
+          const seg = circleRing.segments[i];
+          ctx.beginPath();
+          ctx.arc(seg.x, seg.y, seg.visited ? 16 : 13, 0, Math.PI * 2);
+          ctx.fillStyle = seg.visited ? '#34d399' : '#facc15';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+
+          ctx.font = 'bold 11px "Inter", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#0f172a';
+          ctx.fillText(seg.visited ? '✓' : String(i + 1), seg.x, seg.y);
+        }
+        ctx.restore();
+      }
+
+      function drawWalls() {
+        ctx.save();
+        ctx.lineCap = 'round';
+        for (let i = 0; i < walls.length; i++) {
+          const w = walls[i];
+          ctx.beginPath();
+          ctx.moveTo(w.x1, w.y1);
+          ctx.lineTo(w.x2, w.y2);
+          ctx.lineWidth = w.thickness * 2;
+          ctx.strokeStyle = '#0f766e';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(w.x1, w.y1);
+          ctx.lineTo(w.x2, w.y2);
+          ctx.lineWidth = w.thickness * 0.85;
+          ctx.strokeStyle = '#5eead4';
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawPowerupItems() {
+        for (let i = 0; i < powerupItems.length; i++) {
+          const item = powerupItems[i];
+          const bobY = Math.sin(item.bobPhase) * 4;
+          ctx.save();
+          ctx.translate(item.x, item.y + bobY);
+
+          ctx.beginPath();
+          ctx.arc(0, 0, item.r * 1.45, 0, Math.PI * 2);
+          ctx.fillStyle = item.type.color + '33';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, item.r, 0, Math.PI * 2);
+          ctx.fillStyle = item.type.color;
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+
+          ctx.font = '15px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.type.icon, 0, 1);
+
+          ctx.font = 'bold 10px "Noto Sans TC", sans-serif';
+          ctx.fillStyle = item.type.border;
+          ctx.fillText(item.type.name.slice(2), 0, item.r + 11);
+          ctx.restore();
+        }
+      }
+
+      function drawBullets() {
+        for (let i = 0; i < bullets.length; i++) {
+          const bul = bullets[i];
+          ctx.save();
+          ctx.translate(bul.x, bul.y);
+          ctx.beginPath();
+          ctx.arc(0, 0, bul.r * 1.6, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, bul.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function drawHazards() {
+        for (let i = 0; i < meteors.length; i++) {
+          const m = meteors[i];
+          ctx.save();
+          if (!m.exploded) {
+            const prog = 1 - (m.warnTime / m.maxWarnTime);
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.20)';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#fb7185';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r * (1 - prog), 0, Math.PI * 2);
+            ctx.strokeStyle = '#fde047';
+            ctx.stroke();
+
+            const dropY = m.y - (1 - prog) * 240;
+            ctx.beginPath();
+            ctx.arc(m.x, dropY, m.r * 0.32, 0, Math.PI * 2);
+            ctx.fillStyle = '#fb923c';
+            ctx.fill();
+
+            ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fecdd3';
+            ctx.fillText('☄️ 隕石 ' + m.warnTime.toFixed(1) + 's', m.x, m.y);
+          } else {
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r * 1.05, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.65)';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        for (let i = 0; i < lasers.length; i++) {
+          const l = lasers[i];
+          ctx.save();
+          const len = WORLD_RADIUS * 2.1;
+          const x1 = l.cx - Math.cos(l.ang) * len;
+          const y1 = l.cy - Math.sin(l.ang) * len;
+          const x2 = l.cx + Math.cos(l.ang) * len;
+          const y2 = l.cy + Math.sin(l.ang) * len;
+
+          if (l.state === 'warn') {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = l.halfWidth * 2;
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.22)';
+            ctx.stroke();
+
+            ctx.font = 'bold 12px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fca5a5';
+            ctx.fillText('⚡ 激光預警 ' + l.warnTime.toFixed(1) + 's', l.cx, l.cy - 16);
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = l.halfWidth * 2.2;
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = l.halfWidth;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
+      function drawCandy(c) {
+        const bobY = Math.sin(c.bobPhase) * 3.5;
+        ctx.save();
+        ctx.translate(c.x, c.y + bobY);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, c.r * 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
+        ctx.fill();
+
+        ctx.rotate(c.rot);
+
+        if (c.type.kind === 'konpeito') {
+          const spikes = 8;
+          ctx.beginPath();
+          for (let i = 0; i < spikes * 2; i++) {
+            const rad = i % 2 === 0 ? c.r * 1.15 : c.r * 0.68;
+            const ang = (i / (spikes * 2)) * Math.PI * 2;
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fillStyle = c.type.primary;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+          ctx.fillStyle = c.type.primary;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 10px "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fef08a';
+        ctx.fillText(player && player.parasiteActive ? '🍬解毒+30%' : '🍬+30%', c.x, c.y + bobY + c.r + 12);
+        ctx.restore();
+      }
+
+      function drawBacterium(b) {
+        if (Math.abs(b.x - camera.x) > (viewW / camera.zoom) * 0.72 ||
+            Math.abs(b.y - camera.y) > (viewH / camera.zoom) * 0.72) return;
+
+        const pulseScale = 1 + b.growPulse * 0.22;
+        const r = b.r * pulseScale;
+
+        ctx.save();
+        ctx.translate(b.x, b.y);
+
+        const isEdible = player && (player.r >= b.r * 1.02 || b.paralyzedTimer > 0 || player.tentacleTimer > 0);
+        const isDanger = player && !isEdible && b.r > player.r * 1.04;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = b.paralyzedTimer > 0
+          ? '#38bdf8'
+          : b.species.isParasite && isEdible
+            ? '#bef264'
+            : isEdible
+              ? 'rgba(74, 222, 128, 0.75)'
+              : isDanger
+                ? 'rgba(251, 113, 133, 0.85)'
+                : 'rgba(250, 204, 21, 0.45)';
+        ctx.stroke();
+
+        ctx.rotate(b.angle);
+
+        ctx.fillStyle = b.species.color;
+        ctx.strokeStyle = b.species.border;
+        ctx.lineWidth = Math.max(2, r * 0.1);
+
+        if (b.species.shape === 'segmented_rod') {
+          const segR = r * 0.68;
+          ctx.beginPath();
+          ctx.roundRect(-r * 1.15, -segR, r * 1.25, segR * 2, segR * 0.9);
+          ctx.roundRect(-r * 0.1, -segR * 1.05, r * 1.25, segR * 2.1, segR * 0.95);
+          ctx.fill();
+          ctx.stroke();
+        } else if (b.species.shape === 'spiral_snake') {
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          const segs = 10;
+          for (let i = 0; i <= segs; i++) {
+            const t = i / segs;
+            const px = -r * 1.2 + t * (r * 2.3);
+            const py = Math.sin(b.wobblePhase * 1.8 + t * Math.PI * 3) * (r * 0.44);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.lineWidth = r * 0.85;
+          ctx.strokeStyle = b.species.color;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(r * 0.55, 0, r * 0.52, 0, Math.PI * 2);
+          ctx.fillStyle = b.species.color;
+          ctx.fill();
+        } else if (b.species.shape === 'bacteriophage') {
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const ang = (i / 6) * Math.PI * 2;
+            const px = r * 0.1 + Math.cos(ang) * r * 0.95;
+            const py = Math.sin(ang) * r * 0.88;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (b.species.shape === 'parasite_spore') {
+          const spikes = 8;
+          ctx.beginPath();
+          for (let i = 0; i < spikes * 2; i++) {
+            const rad = i % 2 === 0 ? r * 1.15 : r * 0.78;
+            const ang = (i / (spikes * 2)) * Math.PI * 2;
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#bef264';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = '#a3e635';
+          ctx.fill();
+        } else {
+          const petals = 6;
+          ctx.beginPath();
+          for (let i = 0; i <= 24; i++) {
+            const ang = (i / 24) * Math.PI * 2;
+            const rad = r * (0.88 + 0.16 * Math.cos(ang * petals + b.wobblePhase));
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        const eyeX = r * 0.34;
+        const eyeY = r * 0.26;
+        const eyeR = Math.max(2.5, r * 0.15);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(eyeX, -eyeY, eyeR, 0, Math.PI * 2);
+        ctx.arc(eyeX, eyeY, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX + eyeR * 0.25, -eyeY - eyeR * 0.25, eyeR * 0.38, 0, Math.PI * 2);
+        ctx.arc(eyeX + eyeR * 0.25, eyeY - eyeR * 0.25, eyeR * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 10px "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        if (b.paralyzedTimer > 0) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('⚡麻痺 ' + b.paralyzedTimer.toFixed(1) + 's', b.x, b.y - r - 8);
+        }
+        if (b.species.isParasite && isEdible) {
+          ctx.fillStyle = '#bef264';
+          ctx.fillText('☣️寄生 ' + b.r.toFixed(0) + 'μm', b.x, b.y + r + 13);
+        } else {
+          ctx.fillStyle = isEdible ? '#86efac' : isDanger ? '#fda4af' : '#e2e8f0';
+          ctx.fillText(b.r.toFixed(0) + 'μm', b.x, b.y + r + 13);
+        }
+        ctx.restore();
+      }
+
+      function drawChibiWaterBugPlayer() {
+        if (!player) return;
+        const skin = SKINS[selectedSkin] || SKINS.tardigrade;
+
+        const jumpArc = player.jumpAirTimer > 0 ? Math.sin((player.jumpAirTimer / 1.25) * Math.PI) : 0;
+        const pulse = 1 + player.growPulse * 0.20 + jumpArc * 0.45;
+        const r = player.r * pulse;
+
+        ctx.save();
+        ctx.translate(player.x, player.y);
+
+        if (player.jumpAirTimer > 0) {
+          ctx.beginPath();
+          ctx.ellipse(0, r * 0.85, r * 0.9, r * 0.45, 0, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(2, 8, 20, 0.55)';
+          ctx.fill();
+        }
+
+        // 1. 6 Whipping Attack Tentacles (10s)
+        if (player.tentacleTimer > 0) {
+          ctx.save();
+          const numTentacles = 6;
+          const reach = r * 2.35 + 22;
+          for (let t = 0; t < numTentacles; t++) {
+            const baseAng = (t / numTentacles) * Math.PI * 2 + player.walkCycle * 0.8;
+            const midAng = baseAng + Math.sin(player.walkCycle * 2.5 + t) * 0.45;
+            const tipAng = baseAng - Math.cos(player.walkCycle * 3.0 + t) * 0.55;
+
+            const mx = Math.cos(midAng) * (reach * 0.55);
+            const my = Math.sin(midAng) * (reach * 0.55);
+            const tx = Math.cos(tipAng) * reach;
+            const ty = Math.sin(tipAng) * reach;
+
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(baseAng) * r * 0.5, Math.sin(baseAng) * r * 0.5);
+            ctx.quadraticCurveTo(mx, my, tx, ty);
+            ctx.lineWidth = Math.max(4, r * 0.22);
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#e879f9';
+            ctx.stroke();
+
+            ctx.lineWidth = Math.max(2, r * 0.1);
+            ctx.strokeStyle = '#fdf4ff';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(tx, ty, Math.max(3, r * 0.14), 0, Math.PI * 2);
+            ctx.fillStyle = '#f0abfc';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // 2. 10-Second Invincibility Golden Shield Aura
+        if (player.invincibleTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 1.48, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.24)';
+          ctx.fill();
+          ctx.lineWidth = 3.5;
+          ctx.strokeStyle = '#fde047';
+          ctx.stroke();
+        }
+
+        ctx.rotate(player.angle);
+
+        // 3. 8 Stubby Chubby Tardigrade Legs with Claws
+        const legXPositions = [-r * 0.70, -r * 0.26, r * 0.16, r * 0.54];
+        for (let i = 0; i < legXPositions.length; i++) {
+          const lx = legXPositions[i];
+          const swing = Math.sin(player.walkCycle + i * 1.3) * (r * 0.14);
+
+          for (let side = -1; side <= 1; side += 2) {
+            const ly = side * (r * 0.70);
+            const tipX = lx + swing * side;
+            const tipY = side * (r * 1.10);
+
+            ctx.beginPath();
+            ctx.moveTo(lx - r * 0.15, ly * 0.65);
+            ctx.quadraticCurveTo(tipX - r * 0.1, tipY, tipX, tipY);
+            ctx.quadraticCurveTo(tipX + r * 0.14, tipY, lx + r * 0.15, ly * 0.65);
+            ctx.closePath();
+            ctx.fillStyle = skin.deep;
+            ctx.fill();
+            ctx.lineWidth = Math.max(1.5, r * 0.06);
+            ctx.strokeStyle = skin.fold;
+            ctx.stroke();
+
+            ctx.strokeStyle = skin.claw;
+            ctx.lineWidth = Math.max(1.4, r * 0.05);
+            ctx.lineCap = 'round';
+            for (let c = -1; c <= 1; c++) {
+              ctx.beginPath();
+              ctx.moveTo(tipX + c * r * 0.06, tipY);
+              ctx.lineTo(tipX + c * r * 0.1 + r * 0.05, tipY + side * r * 0.15);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // 4. Plump Segmented Barrel Body
+        const segments = [
+          { x: -r * 0.60, rx: r * 0.55, ry: r * 0.65 },
+          { x: -r * 0.20, rx: r * 0.65, ry: r * 0.77 },
+          { x: r * 0.20,  rx: r * 0.67, ry: r * 0.79 },
+          { x: r * 0.58,  rx: r * 0.57, ry: r * 0.67 }
+        ];
+
+        for (let i = 0; i < segments.length; i++) {
+          const seg = segments[i];
+          ctx.beginPath();
+          ctx.ellipse(seg.x, 0, seg.rx, seg.ry, 0, 0, Math.PI * 2);
+          ctx.fillStyle = skin.core;
+          ctx.fill();
+          ctx.lineWidth = Math.max(2, r * 0.075);
+          ctx.strokeStyle = skin.fold;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(seg.x - seg.rx * 0.12, -seg.ry * 0.22, seg.rx * 0.65, seg.ry * 0.45, 0, 0, Math.PI * 2);
+          ctx.fillStyle = skin.light;
+          ctx.fill();
+        }
+
+        // 5. Wriggling Parasite Inside Belly if Infected
+        if (player.parasiteActive) {
+          const px = -r * 0.12 + Math.cos(player.walkCycle * 2.5) * (r * 0.1);
+          const py = Math.sin(player.walkCycle * 3.2) * (r * 0.1);
+          ctx.beginPath();
+          ctx.arc(px, py, r * 0.32, 0, Math.PI * 2);
+          ctx.fillStyle = '#a855f7';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#bef264';
+          ctx.stroke();
+        }
+
+        // 6. Chibi Eyes & Blush
+        const headX = r * 0.60;
+        const eyeY = r * 0.30;
+        const eyeR = Math.max(3.2, r * 0.145);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(headX, -eyeY, eyeR, 0, Math.PI * 2);
+        ctx.arc(headX, eyeY, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(headX + eyeR * 0.28, -eyeY - eyeR * 0.25, eyeR * 0.4, 0, Math.PI * 2);
+        ctx.arc(headX + eyeR * 0.28, eyeY - eyeR * 0.25, eyeR * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(251, 113, 133, 0.8)';
+        ctx.beginPath();
+        ctx.ellipse(headX - r * 0.08, -eyeY * 1.45, eyeR * 0.62, eyeR * 0.36, 0, 0, Math.PI * 2);
+        ctx.ellipse(headX - r * 0.08, eyeY * 1.45, eyeR * 0.62, eyeR * 0.36, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 7. Puckered Tubular Tardigrade Snout Mouth
+        const snoutX = r * 1.03 + player.mouthOpen * (r * 0.12);
+        const snoutOuterR = r * (0.27 + player.mouthOpen * 0.07);
+        const snoutInnerR = snoutOuterR * 0.52;
+
+        ctx.beginPath();
+        ctx.arc(snoutX, 0, snoutOuterR, 0, Math.PI * 2);
+        ctx.fillStyle = skin.snout;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, r * 0.075);
+        ctx.strokeStyle = skin.fold;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(snoutX + r * 0.03, 0, snoutInnerR, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = '900 12px "Noto Sans TC", sans-serif';
+        ctx.textAlign = 'center';
+        let labelY = player.y - r - 14;
+        if (player.parasiteActive) {
+          ctx.fillStyle = '#bef264';
+          ctx.fillText('☣️ 寄生反噬: ' + player.parasiteTimer.toFixed(1) + 's', player.x, labelY);
+          labelY -= 15;
+        }
+        if (player.invincibleTimer > 0) {
+          ctx.fillStyle = '#fde047';
+          ctx.fillText('🛡️ 無敵: ' + player.invincibleTimer.toFixed(1) + 's', player.x, labelY);
+          labelY -= 15;
+        }
+        if (player.tentacleTimer > 0) {
+          ctx.fillStyle = '#f472b6';
+          ctx.fillText('🐙 觸手: ' + player.tentacleTimer.toFixed(1) + 's', player.x, labelY);
+        }
+        ctx.restore();
+      }
+
+      function drawOffscreenCandyPointers() {
+        if (!player || candies.length === 0) return;
+        let nearest = null;
+        let minDist = Infinity;
+        for (let i = 0; i < candies.length; i++) {
+          const d = dist(player.x, player.y, candies[i].x, candies[i].y);
+          if (d < minDist) {
+            minDist = d;
+            nearest = candies[i];
+          }
+        }
+        if (!nearest || minDist < 140) return;
+
+        const ang = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+        const indicatorDist = player.r + 32;
+        const ix = player.x + Math.cos(ang) * indicatorDist;
+        const iy = player.y + Math.sin(ang) * indicatorDist;
+
+        ctx.save();
+        ctx.translate(ix, iy);
+        ctx.rotate(ang);
+        ctx.fillStyle = player.parasiteActive ? '#a3e635' : '#fde047';
+        ctx.beginPath();
+        ctx.moveTo(11, 0);
+        ctx.lineTo(-5, -6);
+        ctx.lineTo(-2, 0);
+        ctx.lineTo(-5, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawRadar() {
+        const rw = radarCanvas.width;
+        const rh = radarCanvas.height;
+        const rCenter = rw / 2;
+        const scale = (rCenter - 4) / WORLD_RADIUS;
+
+        radarCtx.clearRect(0, 0, rw, rh);
+
+        radarCtx.fillStyle = 'rgba(4, 18, 30, 0.9)';
+        radarCtx.beginPath();
+        radarCtx.arc(rCenter, rCenter, rCenter - 2, 0, Math.PI * 2);
+        radarCtx.fill();
+
+        if (circleRing) {
+          radarCtx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+          radarCtx.lineWidth = 1;
+          radarCtx.beginPath();
+          radarCtx.arc(rCenter, rCenter, circleRing.r * scale, 0, Math.PI * 2);
+          radarCtx.stroke();
+        }
+
+        for (let i = 0; i < candies.length; i++) {
+          const c = candies[i];
+          radarCtx.fillStyle = '#fde047';
+          radarCtx.fillRect(rCenter + c.x * scale - 2, rCenter + c.y * scale - 2, 4, 4);
+        }
+
+        for (let i = 0; i < bacteriaList.length; i++) {
+          const b = bacteriaList[i];
+          const isEdible = player && player.r >= b.r * 1.02;
+          radarCtx.fillStyle = isEdible ? '#4ade80' : '#fb7185';
+          radarCtx.fillRect(rCenter + b.x * scale - 1.5, rCenter + b.y * scale - 1.5, 3, 3);
+        }
+
+        if (player) {
+          radarCtx.fillStyle = '#22d3ee';
+          radarCtx.beginPath();
+          radarCtx.arc(rCenter + player.x * scale, rCenter + player.y * scale, 3, 0, Math.PI * 2);
+          radarCtx.fill();
+        }
+      }
+
+      function renderGame() {
+        drawMicroscopeBackground();
+
+        ctx.save();
+        ctx.translate(viewW / 2, viewH / 2);
+        ctx.scale(camera.zoom, camera.zoom);
+        ctx.translate(-camera.x, -camera.y);
+
+        drawCircleTrack();
+        drawWalls();
+
+        const cullX = (viewW / camera.zoom) * 0.62;
+        const cullY = (viewH / camera.zoom) * 0.62;
+        for (let i = 0; i < planktonSpores.length; i++) {
+          const sp = planktonSpores[i];
+          if (Math.abs(sp.x - camera.x) > cullX || Math.abs(sp.y - camera.y) > cullY) continue;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+          ctx.fillStyle = sp.color;
+          ctx.fill();
+        }
+
+        drawPowerupItems();
+
+        for (let i = 0; i < candies.length; i++) {
+          drawCandy(candies[i]);
+        }
+
+        drawBullets();
+        drawHazards();
+
+        for (let i = 0; i < bacteriaList.length; i++) {
+          drawBacterium(bacteriaList[i]);
+        }
+
+        if (player) {
+          drawOffscreenCandyPointers();
+          drawChibiWaterBugPlayer();
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+
+        for (let i = 0; i < floatingTexts.length; i++) {
+          const ft = floatingTexts[i];
+          ctx.globalAlpha = ft.alpha;
+          ctx.font = `900 ${Math.round(15 * ft.scale)}px "Noto Sans TC", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillStyle = ft.color;
+          ctx.fillText(ft.text, ft.x, ft.y);
+        }
+        ctx.globalAlpha = 1.0;
+
+        ctx.restore();
+
+        if (frameCount % 4 === 0) {
+          drawRadar();
+        }
+      }
+
+      // =========================================================================
+      // 9. HUD & MODAL MANAGEMENT
+      // =========================================================================
+      function updateHUD() {
+        if (!player) return;
+        const cfg = STAGES[currentStageIdx];
+
+        hudStageBadge.textContent = '第 ' + cfg.stage + ' / ' + STAGES.length + ' 關';
+        hudSize.textContent = player.r.toFixed(1);
+        hudAliveCount.textContent = bacteriaList.length;
+        hudEatCount.textContent = Math.min(EAT_TARGET_PER_STAGE, stageProgress.eatenInStage);
+        hudEatTarget.textContent = EAT_TARGET_PER_STAGE;
+
+        const eatPct = clamp((stageProgress.eatenInStage / EAT_TARGET_PER_STAGE) * 100, 0, 100);
+        hudProgress.style.width = eatPct.toFixed(1) + '%';
+
+        hudDotCount.textContent = player.dotProgress;
+        hudDotBar.style.width = ((player.dotProgress / DOTS_FOR_GROWTH) * 100).toFixed(0) + '%';
+
+        hudMissionTitle.textContent = cfg.missionDesc;
+        const mPct = clamp((stageProgress.missionCurrent / stageProgress.missionGoal) * 100, 0, 100);
+        hudMissionBar.style.width = mPct.toFixed(1) + '%';
+        hudMissionStatus.textContent = stageProgress.missionCompleted
+          ? '✅ 已完成'
+          : stageProgress.missionCurrent + ' / ' + stageProgress.missionGoal;
+
+        if (player.invincibleTimer > 0 || player.tentacleTimer > 0) {
+          activeBuffsBox.classList.remove('hidden');
+          if (player.invincibleTimer > 0) {
+            invincibilityBuffRow.classList.remove('hidden');
+            invincibilityTimerText.textContent = player.invincibleTimer.toFixed(1) + 's';
+          } else {
+            invincibilityBuffRow.classList.add('hidden');
+          }
+          if (player.tentacleTimer > 0) {
+            tentacleBuffRow.classList.remove('hidden');
+            tentacleTimerText.textContent = player.tentacleTimer.toFixed(1) + 's';
+          } else {
+            tentacleBuffRow.classList.add('hidden');
+          }
+        } else {
+          activeBuffsBox.classList.add('hidden');
+        }
+
+        if (player.parasiteActive) {
+          parasiteAlertBox.classList.remove('hidden');
+          parasiteTimerText.textContent = player.parasiteTimer.toFixed(1) + 's';
+          parasiteTimerBar.style.width = clamp((player.parasiteTimer / PARASITE_MAX_TIME) * 100, 0, 100) + '%';
+        } else {
+          parasiteAlertBox.classList.add('hidden');
+        }
+
+        badgeBulletCount.textContent = player.bulletAmmo + '發';
+        badgeJumpCount.textContent = String(player.jumpCharges);
+        badgeShieldCount.textContent = String(player.shieldCharges);
+        badgeTentacleCount.textContent = String(player.tentacleCharges);
+
+        const mag = Math.round(400 * camera.zoom);
+        hudZoom.textContent = mag + 'x';
+
+        let edible = 0;
+        let danger = 0;
+        for (let i = 0; i < bacteriaList.length; i++) {
+          if (player.r >= bacteriaList[i].r * 1.02) edible++;
+          else if (bacteriaList[i].r > player.r * 1.04) danger++;
+        }
+        hudEdibleCount.textContent = edible;
+        hudDangerCount.textContent = danger;
+        hudCandyCount.textContent = candies.length;
+
+        const dashRatio = player.dashCooldown / player.dashMaxCooldown;
+        const dashOffset = 289 * (1 - dashRatio);
+        dashCooldownRing.style.strokeDashoffset = String(dashOffset);
+      }
+
+      function clearDpadState() {
+        input.dpadUp = false;
+        input.dpadDown = false;
+        input.dpadLeft = false;
+        input.dpadRight = false;
+        input.canvasDragActive = false;
+        dpadUp.classList.remove('pressed');
+        dpadDown.classList.remove('pressed');
+        dpadLeft.classList.remove('pressed');
+        dpadRight.classList.remove('pressed');
+      }
+
+      function triggerEndGame(victory, killerName = '') {
+        gameState = victory ? 'VICTORY' : 'GAMEOVER';
+        clearDpadState();
+        sound.stopBGM();
+        sound.playEndFanfare(victory);
+
+        modalOverlay.classList.remove('hidden');
+        skinSelectorSection.classList.remove('hidden');
+        resultStatsBox.classList.remove('hidden');
+        btnRetryStage.classList.add('hidden');
+
+        statFinalSize.textContent = '第' + (currentStageIdx + 1) + '關 / ' + player.r.toFixed(1) + 'μm';
+        statEaten.textContent = player.totalEatCount + ' 隻';
+        statCandies.textContent = player.candyCount + ' 顆';
+
+        if (victory) {
+          modalTitle.textContent = '🏆 恭喜全破 5 大關卡！成為顯微鏡水熊霸主！';
+          modalSubtitle.innerHTML = '你的Q版水形蟲成功運用十字鍵與四大道具突破所有關卡任務，完全稱霸微觀世界！';
+          btnStartGame.textContent = '🔄 從第 1 關重新挑戰';
+          btnEndlessContinue.textContent = '♾️ 再玩一次第 5 關';
+          btnEndlessContinue.classList.remove('hidden');
+        } else {
+          modalTitle.textContent = '💧 闖關失敗：遭「' + killerName + '」擊敗！';
+          modalSubtitle.innerHTML = '遇到危險時記得按右下角「<strong class="text-emerald-300">🦘緊急跳躍</strong>」、「<strong class="text-yellow-300">🛡️無敵10秒</strong>」、「<strong class="text-cyan-300">⚡麻痺子彈</strong>」或「<strong class="text-pink-300">🐙觸手10秒</strong>」反擊！';
+          btnStartGame.textContent = '🔬 從第 1 關重新開始';
+          btnEndlessContinue.textContent = '🔄 重試第 ' + (currentStageIdx + 1) + ' 關';
+          btnEndlessContinue.classList.remove('hidden');
+        }
+      }
+
+      // =========================================================================
+      // 10. EVENT LISTENERS (Multi-Touch Safe D-Pad + Canvas Drag + Action Buttons)
+      // =========================================================================
+      function resizeCanvas() {
+        viewW = window.innerWidth;
+        viewH = window.innerHeight;
+        canvas.width = viewW;
+        canvas.height = viewH;
+        renderGame();
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('blur', () => {
+        clearDpadState();
+        input.keys = {};
+      });
+
+      function updateDpadFromPoint(clientX, clientY) {
+        const rect = dpadContainer.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = clientX - cx;
+        const dy = clientY - cy;
+        const distFromCenter = Math.hypot(dx, dy);
+
+        input.dpadUp = false;
+        input.dpadDown = false;
+        input.dpadLeft = false;
+        input.dpadRight = false;
+        dpadUp.classList.remove('pressed');
+        dpadDown.classList.remove('pressed');
+        dpadLeft.classList.remove('pressed');
+        dpadRight.classList.remove('pressed');
+
+        if (distFromCenter < 8) return;
+
+        const ang = Math.atan2(dy, dx);
+        if (ang > -Math.PI * 0.82 && ang < -Math.PI * 0.18) {
+          input.dpadUp = true;
+          dpadUp.classList.add('pressed');
+        }
+        if (ang > Math.PI * 0.18 && ang < Math.PI * 0.82) {
+          input.dpadDown = true;
+          dpadDown.classList.add('pressed');
+        }
+        if (Math.abs(ang) > Math.PI * 0.65) {
+          input.dpadLeft = true;
+          dpadLeft.classList.add('pressed');
+        }
+        if (Math.abs(ang) < Math.PI * 0.35) {
+          input.dpadRight = true;
+          dpadRight.classList.add('pressed');
+        }
+      }
+
+      let dpadPointerId = null;
+      dpadContainer.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sound.init();
+        dpadPointerId = e.pointerId;
+        if (dpadContainer.setPointerCapture) {
+          try { dpadContainer.setPointerCapture(e.pointerId); } catch (_) {}
+        }
+        updateDpadFromPoint(e.clientX, e.clientY);
+      });
+      dpadContainer.addEventListener('pointermove', (e) => {
+        if (dpadPointerId === e.pointerId) {
+          e.preventDefault();
+          updateDpadFromPoint(e.clientX, e.clientY);
+        }
+      });
+      function endDpadPointer(e) {
+        if (dpadPointerId === e.pointerId) {
+          dpadPointerId = null;
+          clearDpadState();
+        }
+      }
+      dpadContainer.addEventListener('pointerup', endDpadPointer);
+      dpadContainer.addEventListener('pointercancel', endDpadPointer);
+
+      // Optional direct canvas touch/mouse drag fallback so dragging on the microscope dish also steers!
+      let canvasPointerId = null;
+      canvas.addEventListener('pointerdown', (e) => {
+        if (gameState !== 'PLAYING') return;
+        sound.init();
+        canvasPointerId = e.pointerId;
+        input.canvasDragActive = true;
+        input.canvasDragX = e.clientX;
+        input.canvasDragY = e.clientY;
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        if (canvasPointerId === e.pointerId && input.canvasDragActive) {
+          input.canvasDragX = e.clientX;
+          input.canvasDragY = e.clientY;
+        }
+      });
+      function endCanvasPointer(e) {
+        if (canvasPointerId === e.pointerId) {
+          canvasPointerId = null;
+          input.canvasDragActive = false;
+        }
+      }
+      canvas.addEventListener('pointerup', endCanvasPointer);
+      canvas.addEventListener('pointercancel', endCanvasPointer);
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        sound.init();
+        input.keys[e.code] = true;
+        if (gameState !== 'PLAYING') return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          triggerMainCircularButton();
+        } else if (e.code === 'KeyJ') {
+          fireParalyzeBullet();
+        } else if (e.code === 'KeyK') {
+          useJumpItem();
+        } else if (e.code === 'KeyL') {
+          useShieldItem();
+        } else if (e.code === 'KeyU') {
+          useTentacleItem();
+        }
+      });
+      window.addEventListener('keyup', (e) => {
+        input.keys[e.code] = false;
+      });
+
+      function bindInstantButton(btn, handler) {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          sound.init();
+          handler();
+        });
+      }
+
+      bindInstantButton(btnDash, triggerMainCircularButton);
+      bindInstantButton(btnShootBullet, fireParalyzeBullet);
+      bindInstantButton(btnJumpItem, useJumpItem);
+      bindInstantButton(btnShieldItem, useShieldItem);
+      bindInstantButton(btnTentacleItem, useTentacleItem);
+
+      const skinButtons = document.querySelectorAll('.skin-btn');
+      skinButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          skinButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedSkin = btn.getAttribute('data-skin') || 'tardigrade';
+          renderGame();
+        });
+      });
+
+      btnStartGame.addEventListener('click', () => {
+        sound.init();
+        if (gameState === 'PAUSED') {
+          gameState = 'PLAYING';
+          modalOverlay.classList.add('hidden');
+          pauseIcon.textContent = '⏸️';
+          sound.startBGM(false);
+          return;
+        }
+        setupStage(0, true);
+        gameState = 'PLAYING';
+        modalOverlay.classList.add('hidden');
+        pauseIcon.textContent = '⏸️';
+        sound.startBGM(true);
+      });
+
+      const retryCurrentStage = () => {
+        sound.init();
+        setupStage(currentStageIdx, false);
+        gameState = 'PLAYING';
+        modalOverlay.classList.add('hidden');
+        pauseIcon.textContent = '⏸️';
+        sound.startBGM(true);
+      };
+      btnEndlessContinue.addEventListener('click', retryCurrentStage);
+      btnRetryStage.addEventListener('click', retryCurrentStage);
+
+      btnAudioToggle.addEventListener('click', () => {
+        const enabled = sound.toggleMute();
+        audioIcon.textContent = enabled ? '🔊' : '🔇';
+        audioLabel.textContent = enabled ? '音效開' : '靜音中';
+      });
+
+      btnPause.addEventListener('click', () => {
+        if (gameState === 'PLAYING') {
+          gameState = 'PAUSED';
+          clearDpadState();
+          sound.stopBGM();
+          pauseIcon.textContent = '▶️';
+          modalOverlay.classList.remove('hidden');
+          skinSelectorSection.classList.remove('hidden');
+          resultStatsBox.classList.add('hidden');
+          btnRetryStage.classList.add('hidden');
+          btnEndlessContinue.textContent = '🔄 重新開始本關';
+          btnEndlessContinue.classList.remove('hidden');
+          modalTitle.textContent = '⏸️ 顯微鏡闖關暫停中';
+          modalSubtitle.textContent = '目前在 ' + STAGES[currentStageIdx].name + '，隨時可切換水熊蟲配色或繼續挑戰！';
+          btnStartGame.textContent = '▶️ 繼續遊戲';
+        } else if (gameState === 'PAUSED') {
+          gameState = 'PLAYING';
+          modalOverlay.classList.add('hidden');
+          pauseIcon.textContent = '⏸️';
+          sound.startBGM(false);
+        }
+      });
+
+      // =========================================================================
+      // 11. MAIN ANIMATION LOOP
+      // =========================================================================
+      function loop(now) {
+        const dt = Math.min(0.04, (now - lastTime) / 1000);
+        lastTime = now;
+
+        if (gameState === 'PLAYING') {
+          updateGame(dt);
+        }
+        renderGame();
+
+        animFrameId = requestAnimationFrame(loop);
+      }
+
+      window.onload = () => {
+        setupStage(0, true);
+        resizeCanvas();
+        lastTime = performance.now();
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(loop);
+      };
+    })();
+  </script>
 </body>
 </html>
